@@ -11,10 +11,11 @@ from api.schemas.analysis import (
     LocationAnalysisRead,
     LocationAnalysisRequest,
 )
+from core.config import get_settings
 from core.db import get_session
-from core.deps import get_current_bd
+from core.deps import get_current_bd, require_admin
 from db.models import BusinessDeveloper
-from services import analysis_service
+from services import analysis_service, feedback_loop_service
 
 router = APIRouter(prefix="/analysis")
 
@@ -59,3 +60,17 @@ async def get_comparison(
 ) -> ComparisonRead:
     run = await analysis_service.get_comparison_run(session, bd, run_id)
     return ComparisonRead.model_validate(run, from_attributes=True)
+
+
+@router.post("/refresh-stale", response_model=list[ComparisonRead])
+async def refresh_stale_comparisons(
+    bd: BusinessDeveloper = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+) -> list[ComparisonRead]:
+    """Manually trigger the same feedback-loop refresh the scheduler runs periodically.
+    Admin-only since it operates system-wide, across all BDs' clients."""
+    settings = get_settings()
+    runs = await feedback_loop_service.refresh_stale_comparisons(
+        session, min_new_applications=settings.feedback_loop_min_applications
+    )
+    return [ComparisonRead.model_validate(r, from_attributes=True) for r in runs]

@@ -1,9 +1,11 @@
 from db.models.agent_run import AgentRun
+from db.models.application import Application
 from db.models.business_developer import BusinessDeveloper
 from db.models.client import Client
 from db.models.comparison_run import ComparisonRun
 from db.models.enums import (
     AnalysisStatus,
+    ApplicationStatus,
     BDRole,
     ClientStatus,
     ProfileType,
@@ -30,10 +32,12 @@ __all__ = [
     "KeywordAnalysis",
     "LocationAnalysis",
     "ComparisonRun",
+    "Application",
     "BDRole",
     "ClientStatus",
     "ProfileType",
     "RemoteType",
     "ScrapeStatus",
     "AnalysisStatus",
+    "ApplicationStatus",
 ]

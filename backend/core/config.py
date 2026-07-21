@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    feedback_loop_interval_hours: int = 6
+    feedback_loop_min_applications: int = 3
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from api.routes.analysis import router as analysis_router
+from api.routes.applications import router as applications_router
 from api.routes.auth import router as auth_router
 from api.routes.bds import router as bds_router
 from api.routes.clients import router as clients_router
@@ -18,3 +19,4 @@ api_router.include_router(profiles_router, tags=["profiles"])
 api_router.include_router(scrape_router, tags=["scrape"])
 api_router.include_router(jobs_router, tags=["jobs"])
 api_router.include_router(analysis_router, tags=["analysis"])
+api_router.include_router(applications_router, tags=["applications"])

@@ -37,3 +37,11 @@ class AnalysisStatus(str, enum.Enum):
     running = "running"
     complete = "complete"
     failed = "failed"
+
+
+class ApplicationStatus(str, enum.Enum):
+    applied = "applied"
+    screening = "screening"
+    interview = "interview"
+    offer = "offer"
+    rejected = "rejected"

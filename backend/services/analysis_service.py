@@ -9,9 +9,11 @@ from agents.keyword_agent import analyze_keywords
 from agents.location_agent import analyze_location
 from db.models import (
     BusinessDeveloper,
+    Client,
     ComparisonRun,
     KeywordAnalysis,
     LocationAnalysis,
+    Profile,
     TargetRole,
 )
 from db.models.enums import AnalysisStatus
@@ -73,28 +75,18 @@ async def run_location_analysis(
     return record
 
 
-async def run_comparison(
+async def execute_comparison(
     session: AsyncSession,
-    bd: BusinessDeveloper,
-    client_id: uuid.UUID,
-    profile_ids: list[uuid.UUID],
-    target_role_id: uuid.UUID | None = None,
+    client: Client,
+    profiles: list[Profile],
+    target_role: TargetRole | None,
 ) -> ComparisonRun:
-    if len(profile_ids) < 2:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least 2 profiles are required")
+    """Core comparison logic, with no BD-ownership check.
 
-    client = await get_client_scoped(session, bd, client_id)
-    target_role = await _get_target_role_scoped(session, bd, target_role_id)
-
-    profiles = []
-    for profile_id in profile_ids:
-        profile = await get_profile_scoped(session, bd, profile_id)
-        if profile.client_id != client.id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="All profiles must belong to the same client"
-            )
-        profiles.append(profile)
-
+    Callable directly by trusted system code (the feedback-loop background job) that
+    doesn't act on behalf of any particular BD. User-facing callers must go through
+    `run_comparison` below, which enforces client/profile ownership first.
+    """
     run = ComparisonRun(
         client_id=client.id,
         target_role_id=target_role.id if target_role else None,
@@ -137,6 +129,31 @@ async def run_comparison(
     await session.commit()
     await session.refresh(run)
     return run
+
+
+async def run_comparison(
+    session: AsyncSession,
+    bd: BusinessDeveloper,
+    client_id: uuid.UUID,
+    profile_ids: list[uuid.UUID],
+    target_role_id: uuid.UUID | None = None,
+) -> ComparisonRun:
+    if len(profile_ids) < 2:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least 2 profiles are required")
+
+    client = await get_client_scoped(session, bd, client_id)
+    target_role = await _get_target_role_scoped(session, bd, target_role_id)
+
+    profiles = []
+    for profile_id in profile_ids:
+        profile = await get_profile_scoped(session, bd, profile_id)
+        if profile.client_id != client.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="All profiles must belong to the same client"
+            )
+        profiles.append(profile)
+
+    return await execute_comparison(session, client, profiles, target_role)
 
 
 async def get_comparison_run(session: AsyncSession, bd: BusinessDeveloper, run_id: uuid.UUID) -> ComparisonRun:

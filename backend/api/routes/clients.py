@@ -4,11 +4,12 @@ from fastapi import APIRouter, Depends
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from api.schemas.client import ClientCreate, ClientRead, ClientUpdate
+from api.schemas.performance import ProfilePerformanceRead
 from api.schemas.target_role import TargetRoleCreate, TargetRoleRead
 from core.db import get_session
 from core.deps import get_current_bd
 from db.models import BusinessDeveloper
-from services import client_service, target_role_service
+from services import client_service, performance_service, target_role_service
 
 router = APIRouter(prefix="/clients")
 
@@ -72,3 +73,13 @@ async def list_target_roles(
 ) -> list[TargetRoleRead]:
     target_roles = await target_role_service.list_target_roles(session, bd, client_id)
     return [TargetRoleRead.model_validate(t, from_attributes=True) for t in target_roles]
+
+
+@router.get("/{client_id}/performance", response_model=list[ProfilePerformanceRead])
+async def get_client_performance(
+    client_id: uuid.UUID,
+    target_role_id: uuid.UUID | None = None,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> list[ProfilePerformanceRead]:
+    return await performance_service.get_profile_performance(session, bd, client_id, target_role_id)
