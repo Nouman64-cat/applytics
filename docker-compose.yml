@@ -1,0 +1,14 @@
+services:
+  # Postgres runs natively on the host (see backend/.env — DATABASE_URL points at
+  # host.docker.internal), not as a container here, so it isn't redefined below.
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
