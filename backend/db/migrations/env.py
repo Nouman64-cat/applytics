@@ -7,8 +7,7 @@ from sqlmodel import SQLModel
 
 from core.config import get_settings
 
-# Import model modules here so their tables register on SQLModel.metadata
-# before autogenerate runs. Empty for now — Phase 1 adds the first models.
+import db.models  # noqa: F401  registers tables on SQLModel.metadata for autogenerate
 
 config = context.config
 

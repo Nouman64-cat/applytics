@@ -13,6 +13,10 @@ class Settings(BaseSettings):
 
     open_api_key: str | None = None
 
+    jwt_secret: str = "dev-secret-change-me"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24
+
     api_v1_prefix: str = "/api/v1"
     cors_origins: list[str] = ["http://localhost:3000"]
 
