@@ -16,3 +16,17 @@ class ClientStatus(str, enum.Enum):
 class ProfileType(str, enum.Enum):
     resume = "resume"
     linkedin = "linkedin"
+
+
+class RemoteType(str, enum.Enum):
+    fully_remote = "fully_remote"
+    hybrid = "hybrid"
+    onsite = "onsite"
+    unknown = "unknown"
+
+
+class ScrapeStatus(str, enum.Enum):
+    pending = "pending"
+    running = "running"
+    success = "success"
+    failed = "failed"
