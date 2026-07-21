@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from api.schemas.analysis import (
@@ -14,6 +14,7 @@ from api.schemas.analysis import (
 from core.config import get_settings
 from core.db import get_session
 from core.deps import get_current_bd, require_admin
+from core.rate_limit import limiter
 from db.models import BusinessDeveloper
 from services import analysis_service, feedback_loop_service
 
@@ -21,7 +22,9 @@ router = APIRouter(prefix="/analysis")
 
 
 @router.post("/keywords", response_model=KeywordAnalysisRead, status_code=201)
+@limiter.limit("20/minute")
 async def analyze_keywords(
+    request: Request,
     payload: KeywordAnalysisRequest,
     bd: BusinessDeveloper = Depends(get_current_bd),
     session: AsyncSession = Depends(get_session),
@@ -31,7 +34,9 @@ async def analyze_keywords(
 
 
 @router.post("/location", response_model=LocationAnalysisRead, status_code=201)
+@limiter.limit("20/minute")
 async def analyze_location(
+    request: Request,
     payload: LocationAnalysisRequest,
     bd: BusinessDeveloper = Depends(get_current_bd),
     session: AsyncSession = Depends(get_session),
@@ -41,7 +46,9 @@ async def analyze_location(
 
 
 @router.post("/compare", response_model=ComparisonRead, status_code=201)
+@limiter.limit("10/minute")
 async def compare_profiles(
+    request: Request,
     payload: ComparisonRequest,
     bd: BusinessDeveloper = Depends(get_current_bd),
     session: AsyncSession = Depends(get_session),

@@ -1,11 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from api.schemas.job import JobSourceRead, ScrapeRunCreate, ScrapeRunRead
 from core.db import get_session
 from core.deps import get_current_bd
+from core.rate_limit import limiter
 from db.models import BusinessDeveloper
 from services import scrape_service
 from services.scraper.base import JobFilters
@@ -23,7 +24,9 @@ async def list_sources(
 
 
 @router.post("/runs", response_model=ScrapeRunRead, status_code=201)
+@limiter.limit("10/minute")
 async def trigger_scrape(
+    request: Request,
     payload: ScrapeRunCreate,
     bd: BusinessDeveloper = Depends(get_current_bd),
     session: AsyncSession = Depends(get_session),

@@ -3,13 +3,14 @@ from fastapi import HTTPException, status
 from services.scraper.adzuna import AdzunaScraper
 from services.scraper.base import JobScraper
 from services.scraper.glassdoor import GlassdoorScraper
+from services.scraper.linkedin import LinkedInScraper
 from services.scraper.unavailable import UnavailableScraper
 
 KNOWN_SOURCES = ["adzuna", "linkedin", "indeed", "glassdoor", "jobwright"]
 
 _SCRAPERS: dict[str, JobScraper] = {
     "adzuna": AdzunaScraper(),
-    "linkedin": UnavailableScraper("linkedin"),
+    "linkedin": LinkedInScraper(),
     "indeed": UnavailableScraper("indeed"),
     "glassdoor": GlassdoorScraper(),
     "jobwright": UnavailableScraper("jobwright"),
