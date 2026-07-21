@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     llm_model: str = "gpt-4o-mini"
 
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.5-flash"
+
     adzuna_app_id: str | None = None
     adzuna_app_key: str | None = None
 

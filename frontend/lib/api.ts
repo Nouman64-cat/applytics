@@ -9,6 +9,7 @@ import type {
   LocationAnalysis,
   Profile,
   ProfilePerformance,
+  ResumeExtraction,
   ScrapeRun,
   TargetRole,
 } from "./types";
@@ -97,6 +98,21 @@ export const api = {
       timezone?: string;
     }) => request<Client>("/clients", { method: "POST", body: JSON.stringify(payload) }),
     get: (id: string) => request<Client>(`/clients/${id}`),
+    extractResume: (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return request<ResumeExtraction>("/clients/extract-resume", { method: "POST", body: formData });
+    },
+    extractLinkedinText: (text: string) =>
+      request<ResumeExtraction>("/clients/extract-linkedin-text", {
+        method: "POST",
+        body: JSON.stringify({ text }),
+      }),
+    extractLinkedinUrl: (url: string) =>
+      request<ResumeExtraction>("/clients/extract-linkedin-url", {
+        method: "POST",
+        body: JSON.stringify({ url }),
+      }),
     listTargetRoles: (id: string) => request<TargetRole[]>(`/clients/${id}/target-roles`),
     createTargetRole: (id: string, payload: { title: string; seniority?: string; must_have_keywords: string[] }) =>
       request<TargetRole>(`/clients/${id}/target-roles`, { method: "POST", body: JSON.stringify(payload) }),

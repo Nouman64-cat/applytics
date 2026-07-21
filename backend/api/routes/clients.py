@@ -1,13 +1,26 @@
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from api.schemas.client import ClientCreate, ClientRead, ClientUpdate
+from agents.resume_extraction_agent import (
+    extract_linkedin_profile_details,
+    extract_linkedin_profile_from_url,
+    extract_resume_details,
+)
+from api.schemas.client import (
+    ClientCreate,
+    ClientRead,
+    ClientUpdate,
+    LinkedInTextExtractionRequest,
+    LinkedInUrlExtractionRequest,
+    ResumeExtractionRead,
+)
 from api.schemas.performance import ProfilePerformanceRead
 from api.schemas.target_role import TargetRoleCreate, TargetRoleRead
 from core.db import get_session
 from core.deps import get_current_bd
+from core.rate_limit import limiter
 from db.models import BusinessDeveloper
 from services import client_service, performance_service, target_role_service
 
@@ -22,6 +35,60 @@ async def create_client(
 ) -> ClientRead:
     client = await client_service.create_client(session, bd, payload)
     return ClientRead.model_validate(client, from_attributes=True)
+
+
+@router.post("/extract-resume", response_model=ResumeExtractionRead)
+@limiter.limit("10/minute")
+async def extract_resume(
+    request: Request,
+    file: UploadFile = File(...),
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> ResumeExtractionRead:
+    """OCR/extract candidate contact details from an uploaded resume (Gemini 2.5 Flash) to
+    prefill the new-client form. Doesn't create or touch any Client record itself."""
+    content = await file.read()
+    try:
+        result = await extract_resume_details(session, file.filename or "resume", content)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+    return ResumeExtractionRead.model_validate(result, from_attributes=True)
+
+
+@router.post("/extract-linkedin-text", response_model=ResumeExtractionRead)
+@limiter.limit("10/minute")
+async def extract_linkedin_text(
+    request: Request,
+    payload: LinkedInTextExtractionRequest,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> ResumeExtractionRead:
+    """Extract candidate contact/location details (Gemini 2.5 Flash) from text the BD pasted
+    from their own logged-in LinkedIn session — no scraping, so no block risk."""
+    try:
+        result = await extract_linkedin_profile_details(session, payload.text)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+    return ResumeExtractionRead.model_validate(result, from_attributes=True)
+
+
+@router.post("/extract-linkedin-url", response_model=ResumeExtractionRead)
+@limiter.limit("5/minute")
+async def extract_linkedin_url(
+    request: Request,
+    payload: LinkedInUrlExtractionRequest,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> ResumeExtractionRead:
+    """Fetch a public LinkedIn profile URL in guest mode and extract candidate details
+    (Gemini 2.5 Flash). Individual profile pages run much more aggressive bot-detection
+    than LinkedIn's job-search pages — this can fail or return sparse results; callers
+    should treat that as an expected occasional outcome and offer the text-paste fallback."""
+    try:
+        result = await extract_linkedin_profile_from_url(session, payload.url)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+    return ResumeExtractionRead.model_validate(result, from_attributes=True)
 
 
 @router.get("", response_model=list[ClientRead])

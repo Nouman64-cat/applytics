@@ -45,3 +45,16 @@ class ComparisonOutput(BaseModel):
     )
     bottlenecks: list[str] = Field(description="Specific, actionable bottlenecks found across the compared profiles")
     summary: str = Field(description="2-4 sentence overall summary of the comparison and recommendation")
+
+
+class ResumeExtraction(BaseModel):
+    full_name: str | None = Field(default=None, description="The candidate's full name, or null if not found")
+    email: str | None = Field(default=None, description="The candidate's email address, or null if not found")
+    current_city: str | None = Field(default=None, description="The candidate's current city, or null if not found")
+    current_state: str | None = Field(
+        default=None, description="The candidate's current state/region, or null if not found"
+    )
+    current_country: str | None = Field(
+        default=None, description="The candidate's current country, or null if not found"
+    )
+    raw_text: str = Field(description="The complete plain-text content of the resume")

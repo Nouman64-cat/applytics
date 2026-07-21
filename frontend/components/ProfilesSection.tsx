@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { KeywordAnalysis, Profile, ProfileType, TargetRole } from "@/lib/types";
 import { badge, btn, btnSecondary, card, errorText, input, label, sectionTitle } from "@/lib/ui";
+import Spinner from "@/components/Spinner";
 
 export default function ProfilesSection({
   clientId,
@@ -152,7 +153,8 @@ export default function ProfilesSection({
             </div>
           )}
 
-          <button type="submit" className={btn} disabled={submitting}>
+          <button type="submit" className={`${btn} gap-2`} disabled={submitting}>
+            {submitting && <Spinner />}
             {submitting ? "Saving…" : "Save profile"}
           </button>
         </form>
@@ -175,17 +177,24 @@ export default function ProfilesSection({
                     {!p.is_active && <span className="ml-2 text-xs text-zinc-400">(inactive)</span>}
                   </div>
                   <button
-                    className={btnSecondary}
+                    className={`${btnSecondary} gap-2`}
                     onClick={() => handleAnalyzeKeywords(p)}
                     disabled={analyzing === p.id}
                   >
+                    {analyzing === p.id && <Spinner />}
                     {analyzing === p.id ? "Analyzing…" : "Analyze keywords"}
                   </button>
                 </div>
                 <p className="mt-1 line-clamp-2 text-xs text-zinc-500">
                   {p.raw_text || p.source_url || "(no content)"}
                 </p>
-                {result && (
+                {analyzing === p.id && (
+                  <div className="mt-2 flex items-center gap-2 rounded bg-zinc-50 p-2 text-xs text-zinc-500 dark:bg-zinc-800/50">
+                    <Spinner className="h-3.5 w-3.5" />
+                    Analyzing keyword strength against the target role…
+                  </div>
+                )}
+                {result && analyzing !== p.id && (
                   <div className="mt-2 rounded bg-zinc-50 p-2 text-xs dark:bg-zinc-800/50">
                     <p>
                       ATS score: <strong>{result.ats_score}</strong> · Recruiter attention:{" "}

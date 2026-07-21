@@ -14,10 +14,11 @@ def _location_summary(client: Client) -> str:
 def _build_prompt(client: Client, target_role: TargetRole | None) -> str:
     role_line = f"Target role: {target_role.title}" if target_role else "Target role: unspecified"
     return (
-        "You are advising a Business Developer who places candidates in 100%-remote, US-based roles. "
-        "Assess whether the candidate's current physical location is likely to hurt their odds with "
-        "employers hiring for fully remote US positions (e.g. timezone overlap, US work authorization "
-        "assumptions, employer bias against non-US-based remote workers).\n\n"
+        "You are advising a Business Developer who places candidates in 100% remote roles at "
+        "USA-based companies. Assess whether the candidate's current physical location is likely to "
+        "hurt their odds with American employers hiring for fully remote US positions (e.g. timezone "
+        "overlap, US work authorization assumptions, employer bias against non-US-based remote "
+        "workers).\n\n"
         f"{role_line}\n"
         f"Candidate's current location: {_location_summary(client)}\n"
         f"Candidate's timezone: {client.timezone or 'unspecified'}"

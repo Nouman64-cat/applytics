@@ -17,7 +17,10 @@ class ComparisonState(TypedDict):
 
 def _role_context(target_role: TargetRole | None) -> str:
     if target_role is None:
-        return "No specific target role provided — evaluate for a general 100% remote US job search."
+        return (
+            "No specific target role provided — evaluate for a general 100% remote job search "
+            "targeting USA-based companies."
+        )
     keywords = ", ".join(target_role.must_have_keywords) or "none specified"
     return f"Target role: {target_role.title} (seniority: {target_role.seniority or 'unspecified'})\nMust-have keywords: {keywords}"
 
@@ -27,7 +30,7 @@ def _profile_block(profile: Profile) -> str:
         f"Profile ID: {profile.id}\n"
         f"Type: {profile.type.value}\n"
         f"Variant label: {profile.variant_label}\n"
-        f"Text:\n{profile.raw_text or '(no text available)'}"
+        f"Resume text:\n{profile.raw_text or '(no text available)'}"
     )
 
 
@@ -37,9 +40,11 @@ def build_comparison_graph(session: AsyncSession):
         scores: list[ProfileScore] = []
         for profile in state["profiles"]:
             prompt = (
-                "You are evaluating one candidate profile in isolation, as part of an A/B comparison "
-                "of multiple profile variants targeting the same role. Rate its strengths and weaknesses "
-                "for a 100% remote US job search.\n\n"
+                "You are evaluating one candidate's resume in isolation, as part of an A/B comparison "
+                "of multiple resume variants targeting the same role at USA-based companies. Every "
+                "hiring manager, recruiter, and ATS you are evaluating against is American — assume US "
+                "hiring conventions and resume-format expectations throughout. Rate this resume's "
+                "strengths and weaknesses for a 100% remote job search targeting the USA market.\n\n"
                 f"{role_context}\n\n{_profile_block(profile)}\n\n"
                 f'Set profile_id in your response to exactly: "{profile.id}"'
             )
@@ -60,10 +65,13 @@ def build_comparison_graph(session: AsyncSession):
             for s in state["profile_scores"]
         )
         prompt = (
-            "Given these independently-scored candidate profile variants for the same target role, "
-            "synthesize a comparison: name the strongest profile by its exact profile_id (or note a tie / "
-            "insufficient data with null), list concrete cross-cutting bottlenecks, and summarize your "
-            "recommendation.\n\n"
+            "Given these independently-scored resume variants for the same candidate and target role — "
+            "all evaluated against USA-based companies' hiring standards and ATS systems — synthesize a "
+            "comparison: name the strongest resume by its exact profile_id (or note a tie / insufficient "
+            "data with null), list concrete cross-cutting bottlenecks explaining specifically why the "
+            "weaker resume(s) would likely fail with American employers (e.g. ATS-unfriendly formatting, "
+            "missing US-expected keywords or sections, unclear work authorization, non-US resume "
+            "conventions), and summarize your recommendation.\n\n"
             f"{scores_text}"
         )
         result = await run_structured(

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { Job, JobSource, RemoteType } from "@/lib/types";
 import { badge, btn, card, errorText, input, label, sectionTitle } from "@/lib/ui";
+import Spinner from "@/components/Spinner";
 
 export default function JobsPage() {
   const [sources, setSources] = useState<JobSource[]>([]);
@@ -118,11 +119,19 @@ export default function JobsPage() {
             </label>
           </div>
           <div className="sm:col-span-4">
-            <button type="submit" className={btn} disabled={scraping || !source}>
+            <button type="submit" className={`${btn} gap-2`} disabled={scraping || !source}>
+              {scraping && <Spinner />}
               {scraping ? "Scraping… (can take ~10-30s)" : "Run scrape"}
             </button>
           </div>
         </form>
+        {scraping && (
+          <div className="flex items-center gap-2 rounded bg-zinc-50 p-3 text-sm text-zinc-500 dark:bg-zinc-800/50">
+            <Spinner className="h-4 w-4" />
+            Running the scraper — headless-browser sources (LinkedIn/Indeed/Glassdoor/Jobright) can take up to 30
+            seconds.
+          </div>
+        )}
         {scrapeStatus && <p className="text-sm text-zinc-600 dark:text-zinc-400">{scrapeStatus}</p>}
       </section>
 

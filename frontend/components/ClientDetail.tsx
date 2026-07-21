@@ -53,8 +53,8 @@ export default function ClientDetail({ clientId }: { clientId: string }) {
         <h1 className="mt-1 text-xl font-semibold">{client.full_name}</h1>
         <p className="text-sm text-zinc-500">
           {client.email}
-          {client.current_city || client.current_country
-            ? ` · ${[client.current_city, client.current_country].filter(Boolean).join(", ")}`
+          {client.current_city || client.current_state || client.current_country
+            ? ` · ${[client.current_city, client.current_state, client.current_country].filter(Boolean).join(", ")}`
             : ""}{" "}
           · {client.status}
         </p>

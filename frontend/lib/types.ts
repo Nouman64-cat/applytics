@@ -27,6 +27,15 @@ export interface Client {
   created_at: string;
 }
 
+export interface ResumeExtraction {
+  full_name: string | null;
+  email: string | null;
+  current_city: string | null;
+  current_state: string | null;
+  current_country: string | null;
+  raw_text: string;
+}
+
 export interface TargetRole {
   id: string;
   client_id: string;

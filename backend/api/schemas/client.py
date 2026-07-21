@@ -36,3 +36,20 @@ class ClientRead(BaseModel):
     timezone: str | None
     status: ClientStatus
     created_at: datetime
+
+
+class ResumeExtractionRead(BaseModel):
+    full_name: str | None
+    email: str | None
+    current_city: str | None
+    current_state: str | None
+    current_country: str | None
+    raw_text: str
+
+
+class LinkedInTextExtractionRequest(BaseModel):
+    text: str
+
+
+class LinkedInUrlExtractionRequest(BaseModel):
+    url: str
