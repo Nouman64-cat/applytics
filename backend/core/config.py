@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     postgres_db: str
     database_url: str
 
-    open_api_key: str | None = None
+    openai_api_key: str | None = None
+    llm_model: str = "gpt-4o-mini"
 
     adzuna_app_id: str | None = None
     adzuna_app_key: str | None = None

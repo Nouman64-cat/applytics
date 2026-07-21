@@ -30,3 +30,10 @@ class ScrapeStatus(str, enum.Enum):
     running = "running"
     success = "success"
     failed = "failed"
+
+
+class AnalysisStatus(str, enum.Enum):
+    pending = "pending"
+    running = "running"
+    complete = "complete"
+    failed = "failed"
