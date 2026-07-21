@@ -44,6 +44,10 @@ export default function JobsPage() {
 
   useEffect(refreshJobs, [refreshJobs]);
 
+  function sourceName(jobSourceId: string): string {
+    return sources.find((s) => s.id === jobSourceId)?.name ?? "unknown";
+  }
+
   async function handleScrape(e: FormEvent) {
     e.preventDefault();
     setScraping(true);
@@ -172,7 +176,10 @@ export default function JobsPage() {
                   <a href={j.apply_url ?? "#"} target="_blank" rel="noreferrer" className="font-medium hover:underline">
                     {j.title}
                   </a>
-                  <span className={badge}>{j.remote_type}</span>
+                  <div className="flex shrink-0 gap-1.5">
+                    <span className={badge}>{sourceName(j.job_source_id)}</span>
+                    <span className={badge}>{j.remote_type}</span>
+                  </div>
                 </div>
                 <p className="text-zinc-500">
                   {j.company ?? "?"} {j.location_raw ? `· ${j.location_raw}` : ""}
