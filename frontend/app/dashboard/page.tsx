@@ -96,15 +96,18 @@ export default function ClientsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Clients</h1>
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-zinc-900">Clients</h1>
+          <p className="text-sm text-zinc-500">Manage the candidates you're representing.</p>
+        </div>
         <button className={btn} onClick={() => setShowForm((v) => !v)}>
-          {showForm ? "Cancel" : "New client"}
+          {showForm ? "Cancel" : "+ New client"}
         </button>
       </div>
 
       {showForm && (
         <div className={`${card} space-y-4`}>
-          <div className="rounded-md border border-dashed border-zinc-300 p-3 dark:border-zinc-700">
+          <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/50 p-4">
             <label className={label}>Upload resume to auto-fill (PDF, image, or DOCX — uses Gemini OCR)</label>
             <input
               ref={fileInputRef}
@@ -115,15 +118,15 @@ export default function ClientsPage() {
               disabled={extracting}
             />
             {extractedFileName && !extracting && (
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1.5 text-xs text-emerald-600">
                 Extracted from {extractedFileName} — a resume profile will be created automatically with this client.
               </p>
             )}
           </div>
 
           {extracting && (
-            <div className="flex items-center gap-3 rounded-md border border-zinc-300 bg-zinc-50 p-3 text-sm font-medium dark:border-zinc-700 dark:bg-zinc-800/50">
-              <Spinner className="h-5 w-5 text-zinc-500" />
+            <div className="flex items-center gap-3 rounded-lg bg-indigo-50 p-3 text-sm font-medium text-indigo-700">
+              <Spinner className="h-5 w-5" />
               <span>Processing resume with AI — this can take up to 15 seconds. The fields below will fill in automatically.</span>
             </div>
           )}
@@ -200,27 +203,37 @@ export default function ClientsPage() {
       {error && <p className={errorText}>{error}</p>}
 
       {clients === null ? (
-        <p className="text-sm text-zinc-500">Loading…</p>
+        <div className="flex items-center gap-2 py-8 text-sm text-zinc-500">
+          <Spinner className="h-4 w-4" />
+          Loading…
+        </div>
       ) : clients.length === 0 ? (
-        <p className="text-sm text-zinc-500">No clients yet. Create one to get started.</p>
+        <p className="py-8 text-center text-sm text-zinc-500">No clients yet. Create one to get started.</p>
       ) : (
         <div className="space-y-2">
           {clients.map((c) => (
             <Link
               key={c.id}
               href={`/dashboard/clients/${c.id}`}
-              className={`${card} flex items-center justify-between hover:border-zinc-400 dark:hover:border-zinc-600`}
+              className={`${card} flex items-center justify-between gap-3 transition-colors hover:border-indigo-300 hover:shadow-md`}
             >
-              <div>
-                <p className={sectionTitle}>{c.full_name}</p>
-                <p className="text-sm text-zinc-500">
-                  {c.email}
-                  {c.current_city || c.current_state || c.current_country
-                    ? ` · ${[c.current_city, c.current_state, c.current_country].filter(Boolean).join(", ")}`
-                    : ""}
-                </p>
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                  {c.full_name.slice(0, 2).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <p className={sectionTitle}>{c.full_name}</p>
+                  <p className="truncate text-sm text-zinc-500">
+                    {c.email}
+                    {c.current_city || c.current_state || c.current_country
+                      ? ` · ${[c.current_city, c.current_state, c.current_country].filter(Boolean).join(", ")}`
+                      : ""}
+                  </p>
+                </div>
               </div>
-              <span className="text-xs uppercase tracking-wide text-zinc-400">{c.status}</span>
+              <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                {c.status}
+              </span>
             </Link>
           ))}
         </div>

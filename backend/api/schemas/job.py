@@ -33,7 +33,9 @@ class ScrapeRunCreate(BaseModel):
     keywords: str | None = None
     remote_only: bool = True
     country: str = "us"
-    max_results: int = 50
+    # None (the default, i.e. omitted) means "keep paginating until no new results turn
+    # up", subject to an internal safety cap — see UNBOUNDED_SAFETY_CAP.
+    max_results: int | None = None
 
 
 class ScrapeRunRead(BaseModel):

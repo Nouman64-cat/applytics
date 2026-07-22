@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends, Query
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -19,6 +20,8 @@ async def list_jobs(
     country: str | None = None,
     source: str | None = None,
     keyword: str | None = None,
+    posted_after: date | None = None,
+    posted_before: date | None = None,
     limit: int = Query(50, le=200),
     offset: int = 0,
     bd: BusinessDeveloper = Depends(get_current_bd),
@@ -30,10 +33,35 @@ async def list_jobs(
         country=country,
         source=source,
         keyword=keyword,
+        posted_after=posted_after,
+        posted_before=posted_before,
         limit=limit,
         offset=offset,
     )
     return [JobRead.model_validate(j, from_attributes=True) for j in jobs]
+
+
+@router.get("/count")
+async def count_jobs(
+    remote_type: RemoteType | None = None,
+    country: str | None = None,
+    source: str | None = None,
+    keyword: str | None = None,
+    posted_after: date | None = None,
+    posted_before: date | None = None,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, int]:
+    total = await job_service.count_jobs(
+        session,
+        remote_type=remote_type,
+        country=country,
+        source=source,
+        keyword=keyword,
+        posted_after=posted_after,
+        posted_before=posted_before,
+    )
+    return {"total": total}
 
 
 @router.get("/{job_id}", response_model=JobRead)

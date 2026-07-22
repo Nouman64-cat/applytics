@@ -67,7 +67,7 @@ export default function PerformanceSection({
           </thead>
           <tbody>
             {performance.map((p) => (
-              <tr key={p.profile_id} className="border-t border-zinc-100 dark:border-zinc-800">
+              <tr key={p.profile_id} className="border-t border-zinc-100 hover:bg-zinc-50">
                 <td className="py-1.5 pr-2">{profileLabel(p.profile_id)}</td>
                 <td className="py-1.5 pr-2">{p.total_applications}</td>
                 <td className="py-1.5 pr-2">

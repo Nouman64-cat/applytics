@@ -73,7 +73,10 @@ export default function ApplicationsSection({ clientId, profiles }: { clientId: 
     <section className={`${card} space-y-3`}>
       <div className="flex items-center justify-between">
         <h2 className={sectionTitle}>Applications</h2>
-        <button className="text-sm text-zinc-500 hover:underline" onClick={() => setShowForm((v) => !v)}>
+        <button
+          className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+          onClick={() => setShowForm((v) => !v)}
+        >
           {showForm ? "Cancel" : "+ Log application"}
         </button>
       </div>
@@ -135,7 +138,7 @@ export default function ApplicationsSection({ clientId, profiles }: { clientId: 
           </thead>
           <tbody>
             {applications.map((a) => (
-              <tr key={a.id} className="border-t border-zinc-100 dark:border-zinc-800">
+              <tr key={a.id} className="border-t border-zinc-100 hover:bg-zinc-50">
                 <td className="py-1.5 pr-2">{profileLabel(a.profile_id)}</td>
                 <td className="py-1.5 pr-2">{jobLabel(a.job_id)}</td>
                 <td className="py-1.5 pr-2 text-zinc-500">{new Date(a.applied_at).toLocaleDateString()}</td>

@@ -145,8 +145,24 @@ export const api = {
   },
 
   jobs: {
-    list: (filters: { remote_type?: string; country?: string; source?: string; keyword?: string; limit?: number }) =>
-      request<Job[]>(`/jobs${qs(filters)}`),
+    list: (filters: {
+      remote_type?: string;
+      country?: string;
+      source?: string;
+      keyword?: string;
+      posted_after?: string;
+      posted_before?: string;
+      limit?: number;
+      offset?: number;
+    }) => request<Job[]>(`/jobs${qs(filters)}`),
+    count: (filters: {
+      remote_type?: string;
+      country?: string;
+      source?: string;
+      keyword?: string;
+      posted_after?: string;
+      posted_before?: string;
+    }) => request<{ total: number }>(`/jobs/count${qs(filters)}`),
   },
 
   analysis: {

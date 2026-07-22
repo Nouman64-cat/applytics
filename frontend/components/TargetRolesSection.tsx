@@ -50,7 +50,10 @@ export default function TargetRolesSection({
     <section className={`${card} space-y-3`}>
       <div className="flex items-center justify-between">
         <h2 className={sectionTitle}>Target roles</h2>
-        <button className="text-sm text-zinc-500 hover:underline" onClick={() => setShowForm((v) => !v)}>
+        <button
+          className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+          onClick={() => setShowForm((v) => !v)}
+        >
           {showForm ? "Cancel" : "+ Add target role"}
         </button>
       </div>

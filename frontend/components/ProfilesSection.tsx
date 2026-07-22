@@ -83,7 +83,10 @@ export default function ProfilesSection({
     <section className={`${card} space-y-3`}>
       <div className="flex items-center justify-between">
         <h2 className={sectionTitle}>Profiles (resume / LinkedIn variants)</h2>
-        <button className="text-sm text-zinc-500 hover:underline" onClick={() => setShowForm((v) => !v)}>
+        <button
+          className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+          onClick={() => setShowForm((v) => !v)}
+        >
           {showForm ? "Cancel" : "+ Add profile"}
         </button>
       </div>
@@ -169,7 +172,7 @@ export default function ProfilesSection({
           {profiles.map((p) => {
             const result = keywordResults[p.id];
             return (
-              <li key={p.id} className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800">
+              <li key={p.id} className="rounded-xl border border-zinc-200/70 p-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className={badge}>{p.type}</span>{" "}
@@ -189,16 +192,16 @@ export default function ProfilesSection({
                   {p.raw_text || p.source_url || "(no content)"}
                 </p>
                 {analyzing === p.id && (
-                  <div className="mt-2 flex items-center gap-2 rounded bg-zinc-50 p-2 text-xs text-zinc-500 dark:bg-zinc-800/50">
+                  <div className="mt-2 flex items-center gap-2 rounded-lg bg-indigo-50 p-2 text-xs text-indigo-700">
                     <Spinner className="h-3.5 w-3.5" />
                     Analyzing keyword strength against the target role…
                   </div>
                 )}
                 {result && analyzing !== p.id && (
-                  <div className="mt-2 rounded bg-zinc-50 p-2 text-xs dark:bg-zinc-800/50">
+                  <div className="mt-2 rounded-lg bg-zinc-50 p-2.5 text-xs text-zinc-600">
                     <p>
-                      ATS score: <strong>{result.ats_score}</strong> · Recruiter attention:{" "}
-                      <strong>{result.recruiter_attention_score}</strong>
+                      ATS score: <strong className="text-zinc-900">{result.ats_score}</strong> · Recruiter attention:{" "}
+                      <strong className="text-zinc-900">{result.recruiter_attention_score}</strong>
                     </p>
                     {result.missing_keywords.length > 0 && (
                       <p className="mt-1">Missing: {result.missing_keywords.join(", ")}</p>

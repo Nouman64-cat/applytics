@@ -92,22 +92,22 @@ export default function AnalysisSection({
           </button>
         </div>
         {locationLoading && (
-          <div className="flex items-center gap-2 rounded bg-zinc-50 p-3 text-sm text-zinc-500 dark:bg-zinc-800/50">
+          <div className="flex items-center gap-2 rounded-lg bg-indigo-50 p-3 text-sm text-indigo-700">
             <Spinner className="h-4 w-4" />
             Assessing location impact on remote-hiring odds…
           </div>
         )}
         {locationResult && !locationLoading && (
-          <div className="rounded bg-zinc-50 p-3 text-sm dark:bg-zinc-800/50">
+          <div className="rounded-lg bg-zinc-50 p-3 text-sm">
             <p>
-              Location penalty score: <strong>{locationResult.location_penalty_score}</strong> / 100
+              Location penalty score: <strong className="text-zinc-900">{locationResult.location_penalty_score}</strong> / 100
             </p>
-            <p className="mt-1 text-zinc-600 dark:text-zinc-400">{locationResult.recommendation}</p>
+            <p className="mt-1 text-zinc-600">{locationResult.recommendation}</p>
           </div>
         )}
       </div>
 
-      <div className="space-y-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+      <div className="space-y-2 border-t border-zinc-200/70 pt-4">
         <h3 className="text-sm font-medium">Compare resumes &amp; rank them</h3>
         {resumeProfiles.length < 2 ? (
           <p className="text-sm text-zinc-500">Add at least 2 resumes to this client to run a comparison.</p>
@@ -150,7 +150,7 @@ export default function AnalysisSection({
         )}
 
         {compareLoading && (
-          <div className="flex items-center gap-2 rounded bg-zinc-50 p-3 text-sm text-zinc-500 dark:bg-zinc-800/50">
+          <div className="flex items-center gap-2 rounded-lg bg-indigo-50 p-3 text-sm text-indigo-700">
             <Spinner className="h-4 w-4" />
             Running the comparison agent across selected profiles — this can take 10-20 seconds…
           </div>

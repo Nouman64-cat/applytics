@@ -4,9 +4,11 @@ import httpx
 
 from core.config import get_settings
 from db.models.enums import RemoteType
-from services.scraper.base import JobFilters, JobScraper, ScrapedJob
+from services.scraper.base import UNBOUNDED_SAFETY_CAP, JobFilters, JobScraper, ScrapedJob
 
 ADZUNA_BASE_URL = "https://api.adzuna.com/v1/api/jobs"
+PAGE_SIZE = 50
+MAX_PAGES = 20  # sanity cap independent of max_results, in case an account/quota quirk keeps returning results
 
 
 def _parse_posted_at(raw: str | None) -> datetime | None:
@@ -67,28 +69,40 @@ class AdzunaScraper(JobScraper):
                 "(free account at https://developer.adzuna.com/)"
             )
 
-        params = {
-            "app_id": settings.adzuna_app_id,
-            "app_key": settings.adzuna_app_key,
-            "results_per_page": min(filters.max_results, 50),
-            "content-type": "application/json",
-        }
         what = filters.keywords or ""
         if filters.remote_only:
             what = f"{what} remote".strip()
-        if what:
-            params["what"] = what
 
-        url = f"{ADZUNA_BASE_URL}/{filters.country}/search/1"
+        target = filters.max_results if filters.max_results is not None else UNBOUNDED_SAFETY_CAP
+        jobs: list[ScrapedJob] = []
 
         async with httpx.AsyncClient(timeout=15) as client:
-            response = await client.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
+            page = 1
+            while len(jobs) < target and page <= MAX_PAGES:
+                params = {
+                    "app_id": settings.adzuna_app_id,
+                    "app_key": settings.adzuna_app_key,
+                    "results_per_page": PAGE_SIZE,
+                    "content-type": "application/json",
+                }
+                if what:
+                    params["what"] = what
 
-        jobs = [parse_adzuna_result(item) for item in data.get("results", [])]
+                url = f"{ADZUNA_BASE_URL}/{filters.country}/search/{page}"
+                response = await client.get(url, params=params)
+                response.raise_for_status()
+                data = response.json()
+                results = data.get("results", [])
+                if not results:
+                    break
 
-        if filters.remote_only:
-            jobs = [j for j in jobs if j.remote_type == RemoteType.fully_remote]
+                page_jobs = [parse_adzuna_result(item) for item in results]
+                if filters.remote_only:
+                    page_jobs = [j for j in page_jobs if j.remote_type == RemoteType.fully_remote]
+                jobs.extend(page_jobs)
 
-        return jobs
+                if len(results) < PAGE_SIZE:
+                    break  # last page
+                page += 1
+
+        return jobs[:target]

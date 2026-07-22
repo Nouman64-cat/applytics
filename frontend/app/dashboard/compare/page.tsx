@@ -141,7 +141,7 @@ export default function CompareClientsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Compare resumes across clients</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-zinc-900">Compare resumes across clients</h1>
         <p className="mt-1 text-sm text-zinc-500">
           Pick a resume from two different clients to rank them side by side and see why the weaker one might fail
           with USA-based employers.
@@ -204,7 +204,7 @@ export default function CompareClientsPage() {
       </div>
 
       {comparing && (
-        <div className="flex items-center gap-2 rounded bg-zinc-50 p-3 text-sm text-zinc-500 dark:bg-zinc-800/50">
+        <div className="flex items-center gap-2 rounded-lg bg-indigo-50 p-3 text-sm text-indigo-700">
           <Spinner className="h-4 w-4" />
           Running the comparison agent across both resumes — this can take 10-20 seconds…
         </div>

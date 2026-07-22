@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* App is light-theme-only: make the `dark:` variant match a class that's
+   never applied, so every existing/future `dark:` utility is inert
+   regardless of the visitor's OS-level color scheme preference. */
+@custom-variant dark (&:where(.force-dark, .force-dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -10,13 +15,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {

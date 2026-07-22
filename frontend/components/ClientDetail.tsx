@@ -47,10 +47,10 @@ export default function ClientDetail({ clientId }: { clientId: string }) {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/dashboard" className="text-sm text-zinc-500 hover:underline">
+        <Link href="/dashboard" className="text-sm font-medium text-zinc-500 hover:text-indigo-600">
           ← All clients
         </Link>
-        <h1 className="mt-1 text-xl font-semibold">{client.full_name}</h1>
+        <h1 className="mt-1 text-xl font-semibold tracking-tight text-zinc-900">{client.full_name}</h1>
         <p className="text-sm text-zinc-500">
           {client.email}
           {client.current_city || client.current_state || client.current_country

@@ -5,12 +5,19 @@ from pydantic import BaseModel, Field
 
 from db.models.enums import RemoteType
 
+# Hard ceiling used when max_results is None ("keep going until no new results").
+# Not truly infinite — an unbounded loop against a live site is a real cost/abuse risk
+# (headless-browser CPU time, faster IP blocking) — but high enough that in practice a
+# search exhausts its real results long before hitting this for most keyword/remote
+# combinations.
+UNBOUNDED_SAFETY_CAP = 300
+
 
 class JobFilters(BaseModel):
     keywords: str | None = None
     remote_only: bool = True
     country: str = "us"
-    max_results: int = 50
+    max_results: int | None = None
 
 
 class ScrapedJob(BaseModel):
