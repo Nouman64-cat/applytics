@@ -62,3 +62,58 @@ async def test_compare_requires_at_least_two_profiles(client, auth_headers, mock
         headers=auth_headers,
     )
     assert resp.status_code == 400
+
+
+async def test_compare_clients_across_different_clients(client, auth_headers, mock_llm):
+    _, profile_a_id, _ = await _create_client_with_profiles(client, auth_headers, "candidate-a@example.com")
+    _, profile_b_id, _ = await _create_client_with_profiles(client, auth_headers, "candidate-b@example.com")
+
+    resp = await client.post(
+        f"{API}/analysis/compare-clients",
+        json={
+            "profile_ids": [profile_a_id, profile_b_id],
+            "role_title": "Backend Engineer",
+            "role_keywords": ["python", "aws"],
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["status"] == "complete"
+    assert body["client_id"] is None
+    assert len(body["result_detail"]["profile_scores"]) == 2
+
+    get_resp = await client.get(f"{API}/analysis/comparisons/{body['id']}", headers=auth_headers)
+    assert get_resp.status_code == 200
+
+
+async def test_compare_clients_requires_at_least_two_profiles(client, auth_headers, mock_llm):
+    _, profile_a_id, _ = await _create_client_with_profiles(client, auth_headers, "solo@example.com")
+
+    resp = await client.post(
+        f"{API}/analysis/compare-clients",
+        json={"profile_ids": [profile_a_id]},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 400
+
+
+async def test_compare_clients_denies_profile_owned_by_other_bd(client, auth_headers, mock_llm):
+    _, profile_a_id, _ = await _create_client_with_profiles(client, auth_headers, "mine@example.com")
+
+    await client.post(
+        f"{API}/auth/register",
+        json={"email": "otherbd-cmp@example.com", "password": "testpass123", "full_name": "Other"},
+    )
+    other_login = await client.post(
+        f"{API}/auth/login", json={"email": "otherbd-cmp@example.com", "password": "testpass123"}
+    )
+    other_headers = {"Authorization": f"Bearer {other_login.json()['access_token']}"}
+    _, other_profile_id, _ = await _create_client_with_profiles(client, other_headers, "theirs@example.com")
+
+    resp = await client.post(
+        f"{API}/analysis/compare-clients",
+        json={"profile_ids": [profile_a_id, other_profile_id]},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 404

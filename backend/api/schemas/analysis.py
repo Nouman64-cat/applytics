@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from db.models.enums import AnalysisStatus
 
@@ -42,9 +42,15 @@ class ComparisonRequest(BaseModel):
     target_role_id: uuid.UUID | None = None
 
 
+class CrossClientComparisonRequest(BaseModel):
+    profile_ids: list[uuid.UUID]
+    role_title: str | None = None
+    role_keywords: list[str] = Field(default_factory=list)
+
+
 class ComparisonRead(BaseModel):
     id: uuid.UUID
-    client_id: uuid.UUID
+    client_id: uuid.UUID | None
     target_role_id: uuid.UUID | None
     profile_ids: list[str]
     status: AnalysisStatus

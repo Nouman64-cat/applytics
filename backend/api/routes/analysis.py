@@ -6,6 +6,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from api.schemas.analysis import (
     ComparisonRead,
     ComparisonRequest,
+    CrossClientComparisonRequest,
     KeywordAnalysisRead,
     KeywordAnalysisRequest,
     LocationAnalysisRead,
@@ -55,6 +56,24 @@ async def compare_profiles(
 ) -> ComparisonRead:
     run = await analysis_service.run_comparison(
         session, bd, payload.client_id, payload.profile_ids, payload.target_role_id
+    )
+    return ComparisonRead.model_validate(run, from_attributes=True)
+
+
+@router.post("/compare-clients", response_model=ComparisonRead, status_code=201)
+@limiter.limit("10/minute")
+async def compare_clients(
+    request: Request,
+    payload: CrossClientComparisonRequest,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> ComparisonRead:
+    """Compare resume profiles across different clients (e.g. two different candidates).
+    Unlike /compare, profiles don't need to share a client — each is checked for BD
+    ownership individually, and the role context is freeform title/keywords rather than
+    a persisted TargetRole (which would belong to only one of the clients)."""
+    run = await analysis_service.run_cross_client_comparison(
+        session, bd, payload.profile_ids, payload.role_title, payload.role_keywords
     )
     return ComparisonRead.model_validate(run, from_attributes=True)
 

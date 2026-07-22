@@ -11,7 +11,9 @@ class ComparisonRun(SQLModel, table=True):
     __tablename__ = "comparison_run"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    client_id: uuid.UUID = Field(foreign_key="client.id", index=True)
+    # Nullable: a cross-client comparison (two different candidates' resumes) doesn't
+    # belong to a single client. Same-client A/B comparisons still set this.
+    client_id: uuid.UUID | None = Field(default=None, foreign_key="client.id", index=True)
     target_role_id: uuid.UUID | None = Field(default=None, foreign_key="target_role.id")
     profile_ids: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     status: AnalysisStatus = Field(default=AnalysisStatus.pending)

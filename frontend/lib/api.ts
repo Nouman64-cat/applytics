@@ -165,6 +165,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ client_id, profile_ids, target_role_id }),
       }),
+    compareClients: (profile_ids: string[], role_title?: string, role_keywords?: string[]) =>
+      request<ComparisonRun>("/analysis/compare-clients", {
+        method: "POST",
+        body: JSON.stringify({ profile_ids, role_title, role_keywords: role_keywords || [] }),
+      }),
   },
 
   applications: {

@@ -6,7 +6,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from db.models import Application, Client, ComparisonRun, Profile, TargetRole
 from db.models.enums import AnalysisStatus
-from services.analysis_service import execute_comparison
+from services.analysis_service import _role_context_from_target_role, execute_comparison
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,10 @@ async def refresh_stale_comparisons(session: AsyncSession, min_new_applications:
         client = await session.get(Client, client_id)
         target_role = await session.get(TargetRole, target_role_id)
 
-        run = await execute_comparison(session, client, profiles, target_role)
+        role_context = _role_context_from_target_role(target_role)
+        run = await execute_comparison(
+            session, client, profiles, role_context, target_role_id=target_role.id if target_role else None
+        )
         triggered.append(run)
         logger.info(
             "Feedback loop: refreshed comparison for client=%s target_role=%s run=%s (%d new applications)",

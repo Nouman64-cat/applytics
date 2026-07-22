@@ -121,7 +121,7 @@ export interface ProfileScoreDetail {
 
 export interface ComparisonRun {
   id: string;
-  client_id: string;
+  client_id: string | null;
   target_role_id: string | null;
   profile_ids: string[];
   status: AnalysisStatus;

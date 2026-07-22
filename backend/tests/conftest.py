@@ -53,6 +53,12 @@ def _setup_test_database():
     async def _setup():
         await _ensure_database_exists()
         async with engine.begin() as conn:
+            # drop_all + create_all (not just create_all) so the test DB's schema can
+            # never drift from the current models — `applytics_test` persists across
+            # pytest runs in the same native Postgres, and create_all alone only adds
+            # missing tables; it won't apply column-level changes (e.g. a NOT NULL ->
+            # NULL migration) to tables that already exist from a previous run.
+            await conn.run_sync(SQLModel.metadata.drop_all)
             await conn.run_sync(SQLModel.metadata.create_all)
         async with async_session_factory() as session:
             from sqlmodel import select

@@ -30,6 +30,18 @@ function JobsIcon() {
   );
 }
 
+function CompareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 shrink-0">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h18M16.5 3 21 7.5m0 0L16.5 12M21 7.5H3"
+      />
+    </svg>
+  );
+}
+
 function LogoutIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4 shrink-0">
@@ -45,6 +57,7 @@ function LogoutIcon() {
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Clients", icon: ClientsIcon },
   { href: "/dashboard/jobs", label: "Jobs", icon: JobsIcon },
+  { href: "/dashboard/compare", label: "Compare", icon: CompareIcon },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

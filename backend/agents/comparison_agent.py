@@ -5,24 +5,14 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from agents.llm import run_structured
 from agents.schemas import ComparisonOutput, ProfileScore
-from db.models import Profile, TargetRole
+from db.models import Profile
 
 
 class ComparisonState(TypedDict):
     profiles: list[Profile]
-    target_role: TargetRole | None
+    role_context: str
     profile_scores: list[ProfileScore]
     result: ComparisonOutput | None
-
-
-def _role_context(target_role: TargetRole | None) -> str:
-    if target_role is None:
-        return (
-            "No specific target role provided — evaluate for a general 100% remote job search "
-            "targeting USA-based companies."
-        )
-    keywords = ", ".join(target_role.must_have_keywords) or "none specified"
-    return f"Target role: {target_role.title} (seniority: {target_role.seniority or 'unspecified'})\nMust-have keywords: {keywords}"
 
 
 def _profile_block(profile: Profile) -> str:
@@ -36,7 +26,7 @@ def _profile_block(profile: Profile) -> str:
 
 def build_comparison_graph(session: AsyncSession):
     async def score_profiles(state: ComparisonState) -> dict:
-        role_context = _role_context(state["target_role"])
+        role_context = state["role_context"]
         scores: list[ProfileScore] = []
         for profile in state["profiles"]:
             prompt = (
@@ -77,8 +67,8 @@ def build_comparison_graph(session: AsyncSession):
         result = await run_structured(
             session,
             agent_type="comparison_synthesis",
-            related_entity_type="client",
-            related_entity_id=state["profiles"][0].client_id,
+            related_entity_type="profile",
+            related_entity_id=state["profiles"][0].id,
             prompt=prompt,
             output_model=ComparisonOutput,
         )
