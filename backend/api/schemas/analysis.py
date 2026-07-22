@@ -59,3 +59,31 @@ class ComparisonRead(BaseModel):
     winner_profile_id: uuid.UUID | None
     created_at: datetime
     completed_at: datetime | None
+
+
+class JobMatchRequest(BaseModel):
+    profile_id: uuid.UUID
+    # If omitted, matches against the most recently scraped jobs instead of a specific set
+    # (e.g. whatever the BD currently has filtered/visible on the Jobs page).
+    job_ids: list[uuid.UUID] | None = None
+
+
+class JobMatchItem(BaseModel):
+    job_id: uuid.UUID
+    score: int
+    rationale: str
+    title: str
+    company: str | None
+    location_raw: str | None
+    remote_type: str
+    apply_url: str | None
+
+
+class JobMatchRead(BaseModel):
+    id: uuid.UUID
+    profile_id: uuid.UUID
+    client_id: uuid.UUID
+    status: AnalysisStatus
+    matches: list[JobMatchItem]
+    created_at: datetime
+    completed_at: datetime | None

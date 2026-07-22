@@ -7,6 +7,8 @@ from api.schemas.analysis import (
     ComparisonRead,
     ComparisonRequest,
     CrossClientComparisonRequest,
+    JobMatchRead,
+    JobMatchRequest,
     KeywordAnalysisRead,
     KeywordAnalysisRequest,
     LocationAnalysisRead,
@@ -17,7 +19,7 @@ from core.db import get_session
 from core.deps import get_current_bd, require_admin
 from core.rate_limit import limiter
 from db.models import BusinessDeveloper
-from services import analysis_service, feedback_loop_service
+from services import analysis_service, feedback_loop_service, job_match_service
 
 router = APIRouter(prefix="/analysis")
 
@@ -76,6 +78,26 @@ async def compare_clients(
         session, bd, payload.profile_ids, payload.role_title, payload.role_keywords
     )
     return ComparisonRead.model_validate(run, from_attributes=True)
+
+
+@router.post("/job-matches", response_model=JobMatchRead, status_code=201)
+@limiter.limit("10/minute")
+async def match_jobs(
+    request: Request,
+    payload: JobMatchRequest,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> JobMatchRead:
+    run = await job_match_service.match_jobs_for_profile(session, bd, payload.profile_id, payload.job_ids)
+    return JobMatchRead(
+        id=run.id,
+        profile_id=run.profile_id,
+        client_id=run.client_id,
+        status=run.status,
+        matches=run.result_detail.get("matches", []),
+        created_at=run.created_at,
+        completed_at=run.completed_at,
+    )
 
 
 @router.get("/comparisons/{run_id}", response_model=ComparisonRead)

@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import { api, ApiError } from "@/lib/api";
 import type { Job, JobSource, RemoteType } from "@/lib/types";
 import Spinner from "@/components/Spinner";
@@ -27,7 +33,10 @@ const lTagInputWrap =
 // No external logo assets/CDNs here — each source gets a simple colored monogram icon
 // (brand-adjacent color, not an actual trademarked logo) so the jobs table is scannable
 // at a glance without a network dependency.
-const SOURCE_ICONS: Record<string, { letter: string; bg: string; text: string }> = {
+const SOURCE_ICONS: Record<
+  string,
+  { letter: string; bg: string; text: string }
+> = {
   adzuna: { letter: "A", bg: "bg-teal-100", text: "text-teal-700" },
   linkedin: { letter: "in", bg: "bg-sky-100", text: "text-sky-700" },
   indeed: { letter: "I", bg: "bg-blue-100", text: "text-blue-700" },
@@ -38,7 +47,13 @@ const SOURCE_ICONS: Record<string, { letter: string; bg: string; text: string }>
 
 function LinkIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.75} stroke="currentColor" className="h-4 w-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      strokeWidth={1.75}
+      stroke="currentColor"
+      className="h-4 w-4"
+    >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -50,7 +65,13 @@ function LinkIcon() {
 
 function TrashIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.75} stroke="currentColor" className="h-4 w-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      strokeWidth={1.75}
+      stroke="currentColor"
+      className="h-4 w-4"
+    >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -60,10 +81,22 @@ function TrashIcon() {
   );
 }
 
-function SourceIcon({ name, className = "h-5 w-5 text-[10px]" }: { name: string; className?: string }) {
-  const icon = SOURCE_ICONS[name.toLowerCase()] ?? { letter: "?", bg: "bg-zinc-100", text: "text-zinc-500" };
+function SourceIcon({
+  name,
+  className = "h-5 w-5 text-[10px]",
+}: {
+  name: string;
+  className?: string;
+}) {
+  const icon = SOURCE_ICONS[name.toLowerCase()] ?? {
+    letter: "?",
+    bg: "bg-zinc-100",
+    text: "text-zinc-500",
+  };
   return (
-    <span className={`flex shrink-0 items-center justify-center rounded-md font-bold ${icon.bg} ${icon.text} ${className}`}>
+    <span
+      className={`flex shrink-0 items-center justify-center rounded-md font-bold ${icon.bg} ${icon.text} ${className}`}
+    >
       {icon.letter}
     </span>
   );
@@ -80,7 +113,13 @@ function SourceBadge({ name }: { name: string }) {
 
 function SparklesIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.75} stroke="currentColor" className="h-4 w-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      strokeWidth={1.75}
+      stroke="currentColor"
+      className="h-4 w-4"
+    >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -88,6 +127,15 @@ function SparklesIcon() {
       />
     </svg>
   );
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export default function JobsPage() {
@@ -133,15 +181,28 @@ export default function JobsPage() {
 
   const refreshJobs = useCallback(() => {
     api.jobs
-      .list({ ...filterParams, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE })
+      .list({
+        ...filterParams,
+        limit: PAGE_SIZE,
+        offset: (page - 1) * PAGE_SIZE,
+      })
       .then(setJobs)
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load jobs"));
+      .catch((err) =>
+        setError(err instanceof ApiError ? err.message : "Failed to load jobs"),
+      );
     api.jobs
       .count(filterParams)
       .then((res) => setTotal(res.total))
       .catch(() => setTotal(0));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterSource, filterRemoteType, filterKeyword, postedAfter, postedBefore, page]);
+  }, [
+    filterSource,
+    filterRemoteType,
+    filterKeyword,
+    postedAfter,
+    postedBefore,
+    page,
+  ]);
 
   useEffect(() => {
     api.scrape
@@ -153,7 +214,11 @@ export default function JobsPage() {
           if (firstEnabled) setSource(firstEnabled.name);
         }
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load sources"));
+      .catch((err) =>
+        setError(
+          err instanceof ApiError ? err.message : "Failed to load sources",
+        ),
+      );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -163,12 +228,25 @@ export default function JobsPage() {
   useEffect(() => {
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterSource, filterRemoteType, filterKeyword, postedAfter, postedBefore]);
+  }, [
+    filterSource,
+    filterRemoteType,
+    filterKeyword,
+    postedAfter,
+    postedBefore,
+  ]);
 
   // Selection is scoped to the currently visible page/filter set — clear it whenever either changes.
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [page, filterSource, filterRemoteType, filterKeyword, postedAfter, postedBefore]);
+  }, [
+    page,
+    filterSource,
+    filterRemoteType,
+    filterKeyword,
+    postedAfter,
+    postedBefore,
+  ]);
 
   function toggleSelected(id: string) {
     setSelectedIds((prev) => {
@@ -181,15 +259,25 @@ export default function JobsPage() {
 
   function toggleSelectAll() {
     if (!jobs) return;
-    setSelectedIds((prev) => (prev.size === jobs.length ? new Set() : new Set(jobs.map((j) => j.id))));
+    setSelectedIds((prev) =>
+      prev.size === jobs.length ? new Set() : new Set(jobs.map((j) => j.id)),
+    );
   }
 
   async function handleToggleUsed(job: Job, value: boolean) {
-    setJobs((prev) => prev && prev.map((j) => (j.id === job.id ? { ...j, is_used: value } : j)));
+    setJobs(
+      (prev) =>
+        prev &&
+        prev.map((j) => (j.id === job.id ? { ...j, is_used: value } : j)),
+    );
     try {
       await api.jobs.setUsed(job.id, value);
     } catch (err) {
-      setJobs((prev) => prev && prev.map((j) => (j.id === job.id ? { ...j, is_used: !value } : j)));
+      setJobs(
+        (prev) =>
+          prev &&
+          prev.map((j) => (j.id === job.id ? { ...j, is_used: !value } : j)),
+      );
       setError(err instanceof ApiError ? err.message : "Failed to update job");
     }
   }
@@ -225,7 +313,7 @@ export default function JobsPage() {
       setBulkDeleteNotice(
         result.skipped > 0
           ? `Deleted ${result.deleted} job(s). Skipped ${result.skipped} — they have an application logged against them.`
-          : `Deleted ${result.deleted} job(s).`
+          : `Deleted ${result.deleted} job(s).`,
       );
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Bulk delete failed");
@@ -254,7 +342,11 @@ export default function JobsPage() {
       e.preventDefault();
       addKeywordTag(keywordInput);
       setKeywordInput("");
-    } else if (e.key === "Backspace" && keywordInput === "" && keywordTags.length > 0) {
+    } else if (
+      e.key === "Backspace" &&
+      keywordInput === "" &&
+      keywordTags.length > 0
+    ) {
       setKeywordTags((prev) => prev.slice(0, -1));
     }
   }
@@ -297,7 +389,7 @@ export default function JobsPage() {
         max_results: maxResults ? Number(maxResults) : undefined,
       });
       setScrapeStatus(
-        `Run ${run.status}: ${run.jobs_found_count} job(s) found${run.error_message ? ` — ${run.error_message}` : ""}`
+        `Run ${run.status}: ${run.jobs_found_count} job(s) found${run.error_message ? ` — ${run.error_message}` : ""}`,
       );
       refreshJobs();
     } catch (err) {
@@ -318,7 +410,9 @@ export default function JobsPage() {
       });
       setKeywordSuggestions(result.keywords);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Keyword suggestion failed");
+      setError(
+        err instanceof ApiError ? err.message : "Keyword suggestion failed",
+      );
     } finally {
       setSuggestingKeywords(false);
     }
@@ -331,10 +425,17 @@ export default function JobsPage() {
       <div className="mx-auto max-w-none space-y-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-900">Jobs</h1>
-            <p className="text-sm text-zinc-500">Browse scraped listings and trigger new scrape runs.</p>
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900">
+              Jobs
+            </h1>
+            <p className="text-sm text-zinc-500">
+              Browse scraped listings and trigger new scrape runs.
+            </p>
           </div>
-          <button className={lBtnSecondary} onClick={() => setShowScrapeForm((v) => !v)}>
+          <button
+            className={lBtnSecondary}
+            onClick={() => setShowScrapeForm((v) => !v)}
+          >
             {showScrapeForm ? "Hide scrape form" : "Trigger a scrape"}
           </button>
         </div>
@@ -346,17 +447,27 @@ export default function JobsPage() {
                 <span
                   key={s.id}
                   className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                    s.is_enabled ? "bg-emerald-50 text-emerald-700" : "bg-zinc-100 text-zinc-400"
+                    s.is_enabled
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-zinc-100 text-zinc-400"
                   }`}
                 >
                   {s.name}: {s.is_enabled ? "enabled" : "disabled"}
                 </span>
               ))}
             </div>
-            <form onSubmit={handleScrape} className="grid grid-cols-2 gap-3 sm:grid-cols-6">
+            <form
+              onSubmit={handleScrape}
+              className="grid grid-cols-2 gap-3 sm:grid-cols-6"
+            >
               <div>
                 <label className={lLabel}>Source</label>
-                <select className={lInput} value={source} onChange={(e) => setSource(e.target.value)} required>
+                <select
+                  className={lInput}
+                  value={source}
+                  onChange={(e) => setSource(e.target.value)}
+                  required
+                >
                   <option value="">Select…</option>
                   {sources.map((s) => (
                     <option key={s.id} value={s.name} disabled={!s.is_enabled}>
@@ -383,7 +494,11 @@ export default function JobsPage() {
                     disabled={suggestingKeywords}
                     className="mb-1.5 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
                   >
-                    {suggestingKeywords ? <Spinner className="h-3 w-3" /> : <SparklesIcon />}
+                    {suggestingKeywords ? (
+                      <Spinner className="h-3 w-3" />
+                    ) : (
+                      <SparklesIcon />
+                    )}
                     {suggestingKeywords ? "Thinking…" : "AI suggest"}
                   </button>
                 </div>
@@ -405,11 +520,15 @@ export default function JobsPage() {
                     </span>
                   ))}
                   <input
-                    className="min-w-[6rem] flex-1 border-none bg-transparent p-0 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-0"
+                    className="min-w-24 flex-1 border-none bg-transparent p-0 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-0"
                     value={keywordInput}
                     onChange={(e) => handleKeywordInputPaste(e.target.value)}
                     onKeyDown={handleKeywordInputKeyDown}
-                    placeholder={keywordTags.length === 0 ? "backend engineer, remote…" : ""}
+                    placeholder={
+                      keywordTags.length === 0
+                        ? "backend engineer, remote…"
+                        : ""
+                    }
                   />
                 </div>
               </div>
@@ -426,12 +545,20 @@ export default function JobsPage() {
               </div>
               <div className="flex items-end">
                 <label className="flex items-center gap-1.5 text-sm text-zinc-700">
-                  <input type="checkbox" checked={remoteOnly} onChange={(e) => setRemoteOnly(e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={remoteOnly}
+                    onChange={(e) => setRemoteOnly(e.target.checked)}
+                  />
                   Remote only
                 </label>
               </div>
               <div className="flex items-end">
-                <button type="submit" className={`${lBtn} w-full`} disabled={scraping || !source}>
+                <button
+                  type="submit"
+                  className={`${lBtn} w-full`}
+                  disabled={scraping || !source}
+                >
                   {scraping && <Spinner />}
                   {scraping ? "Scraping…" : "Run scrape"}
                 </button>
@@ -445,7 +572,9 @@ export default function JobsPage() {
                       type="button"
                       onClick={() => {
                         addKeywordTag(k);
-                        setKeywordSuggestions((prev) => prev.filter((s) => s !== k));
+                        setKeywordSuggestions((prev) =>
+                          prev.filter((s) => s !== k),
+                        );
                       }}
                       className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-100"
                     >
@@ -456,27 +585,37 @@ export default function JobsPage() {
               )}
             </form>
             <p className="text-xs text-zinc-500">
-              Leave &quot;Max results&quot; blank to keep paginating until the source has no new results (capped
-              internally as a safety limit) — otherwise it stops at the number you enter.
+              Leave &quot;Max results&quot; blank to keep paginating until the
+              source has no new results (capped internally as a safety limit) —
+              otherwise it stops at the number you enter.
             </p>
             {scraping && (
               <div className="flex items-center gap-2 rounded-lg bg-indigo-50 p-2.5 text-sm text-indigo-700">
                 <Spinner className="h-4 w-4" />
-                Running the scraper — unlimited/headless-browser sources can take a while.
+                Running the scraper — unlimited/headless-browser sources can
+                take a while.
               </div>
             )}
-            {scrapeStatus && <p className="text-sm text-zinc-600">{scrapeStatus}</p>}
+            {scrapeStatus && (
+              <p className="text-sm text-zinc-600">{scrapeStatus}</p>
+            )}
           </section>
         )}
 
-        {error && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
         <section className="space-y-3 rounded-2xl border border-zinc-200/70 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap gap-1.5 border-b border-zinc-200/70 pb-3">
             <button
               onClick={() => setFilterSource("")}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                filterSource === "" ? "bg-indigo-50 text-indigo-600" : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                filterSource === ""
+                  ? "bg-indigo-50 text-indigo-600"
+                  : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
               }`}
             >
               All platforms
@@ -502,7 +641,9 @@ export default function JobsPage() {
               <select
                 className={lInput}
                 value={filterRemoteType}
-                onChange={(e) => setFilterRemoteType(e.target.value as RemoteType | "")}
+                onChange={(e) =>
+                  setFilterRemoteType(e.target.value as RemoteType | "")
+                }
               >
                 <option value="">All</option>
                 <option value="fully_remote">Fully remote</option>
@@ -512,8 +653,12 @@ export default function JobsPage() {
               </select>
             </div>
             <div className="w-40">
-              <label className={lLabel}>Keyword</label>
-              <input className={lInput} value={filterKeyword} onChange={(e) => setFilterKeyword(e.target.value)} />
+              <label className={lLabel}>Search</label>
+              <input
+                className={lInput}
+                value={filterKeyword}
+                onChange={(e) => setFilterKeyword(e.target.value)}
+              />
             </div>
             <div className="w-36">
               <label className={lLabel}>Posted after</label>
@@ -533,7 +678,9 @@ export default function JobsPage() {
                 onChange={(e) => setPostedBefore(e.target.value)}
               />
             </div>
-            <div className="ml-auto text-xs font-medium text-zinc-400">{total} job(s) found</div>
+            <div className="ml-auto text-xs font-medium text-zinc-400">
+              {total} job(s) found
+            </div>
           </div>
 
           {selectedIds.size > 0 && (
@@ -541,20 +688,31 @@ export default function JobsPage() {
               <span className="font-medium">{selectedIds.size} selected</span>
               <button
                 className="inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1 text-sm font-medium text-red-600 shadow-sm hover:bg-red-50 disabled:opacity-50"
-                onClick={() => setConfirmTarget({ kind: "bulk", count: selectedIds.size })}
+                onClick={() =>
+                  setConfirmTarget({ kind: "bulk", count: selectedIds.size })
+                }
                 disabled={bulkDeleting}
               >
-                {bulkDeleting ? <Spinner className="h-3.5 w-3.5" /> : <TrashIcon />}
+                {bulkDeleting ? (
+                  <Spinner className="h-3.5 w-3.5" />
+                ) : (
+                  <TrashIcon />
+                )}
                 {bulkDeleting ? "Deleting…" : "Delete selected"}
               </button>
-              <button className="text-indigo-600 hover:underline" onClick={() => setSelectedIds(new Set())}>
+              <button
+                className="text-indigo-600 hover:underline"
+                onClick={() => setSelectedIds(new Set())}
+              >
                 Clear selection
               </button>
             </div>
           )}
 
           {bulkDeleteNotice && (
-            <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">{bulkDeleteNotice}</div>
+            <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              {bulkDeleteNotice}
+            </div>
           )}
 
           {jobs === null ? (
@@ -574,7 +732,9 @@ export default function JobsPage() {
                     <th className="w-8 px-3 py-2.5">
                       <input
                         type="checkbox"
-                        checked={jobs.length > 0 && selectedIds.size === jobs.length}
+                        checked={
+                          jobs.length > 0 && selectedIds.size === jobs.length
+                        }
                         onChange={toggleSelectAll}
                         aria-label="Select all jobs on this page"
                       />
@@ -585,8 +745,11 @@ export default function JobsPage() {
                     <th className="px-3 py-2.5 font-medium">Location</th>
                     <th className="px-3 py-2.5 font-medium">Remote</th>
                     <th className="px-3 py-2.5 font-medium">Posted</th>
+                    <th className="px-3 py-2.5 font-medium">Scraped</th>
                     <th className="px-3 py-2.5 font-medium">Used</th>
-                    <th className="px-3 py-2.5 font-medium text-right">Actions</th>
+                    <th className="px-3 py-2.5 font-medium text-right">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -614,7 +777,8 @@ export default function JobsPage() {
                           target="_blank"
                           rel="noreferrer"
                           onClick={() => {
-                            if (j.apply_url && !j.is_used) handleToggleUsed(j, true);
+                            if (j.apply_url && !j.is_used)
+                              handleToggleUsed(j, true);
                           }}
                           className={`font-medium hover:text-indigo-600 hover:underline ${
                             j.is_used ? "text-zinc-400" : "text-zinc-900"
@@ -624,20 +788,31 @@ export default function JobsPage() {
                           {j.title}
                         </a>
                       </td>
-                      <td className="max-w-[10rem] truncate px-3 py-2.5 text-zinc-600" title={j.company ?? undefined}>
+                      <td
+                        className="max-w-40 truncate px-3 py-2.5 text-zinc-600"
+                        title={j.company ?? undefined}
+                      >
                         {j.company ?? "—"}
                       </td>
                       <td
-                        className="max-w-[10rem] truncate px-3 py-2.5 text-zinc-600"
+                        className="max-w-40 truncate px-3 py-2.5 text-zinc-600"
                         title={j.location_raw ?? undefined}
                       >
                         {j.location_raw ?? "—"}
                       </td>
                       <td className="px-3 py-2.5">
-                        <span className={remoteBadge(j.remote_type)}>{j.remote_type}</span>
+                        <span className={remoteBadge(j.remote_type)}>
+                          {j.remote_type}
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5 text-zinc-500">
                         {(j.posted_at ?? j.scraped_at).slice(0, 10)}
+                      </td>
+                      <td
+                        className="whitespace-nowrap px-3 py-2.5 text-zinc-500"
+                        title={new Date(j.scraped_at).toISOString()}
+                      >
+                        {formatDateTime(j.scraped_at)}
                       </td>
                       <td className="px-3 py-2.5">
                         <Switch
@@ -671,11 +846,17 @@ export default function JobsPage() {
                           )}
                           <button
                             title="Delete job"
-                            onClick={() => setConfirmTarget({ kind: "single", job: j })}
+                            onClick={() =>
+                              setConfirmTarget({ kind: "single", job: j })
+                            }
                             disabled={deletingId === j.id}
                             className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                           >
-                            {deletingId === j.id ? <Spinner className="h-3.5 w-3.5" /> : <TrashIcon />}
+                            {deletingId === j.id ? (
+                              <Spinner className="h-3.5 w-3.5" />
+                            ) : (
+                              <TrashIcon />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -689,7 +870,8 @@ export default function JobsPage() {
           {jobs !== null && jobs.length > 0 && (
             <div className="flex items-center justify-between border-t border-zinc-200/70 pt-3 text-sm">
               <span className="text-zinc-500">
-                Page <span className="font-medium text-zinc-700">{page}</span> of {totalPages}
+                Page <span className="font-medium text-zinc-700">{page}</span>{" "}
+                of {totalPages}
               </span>
               <div className="flex gap-2">
                 <button
@@ -722,10 +904,15 @@ export default function JobsPage() {
         description="This can't be undone."
         confirmLabel="Delete"
         destructive
-        loading={confirmTarget?.kind === "single" ? deletingId === confirmTarget.job.id : bulkDeleting}
+        loading={
+          confirmTarget?.kind === "single"
+            ? deletingId === confirmTarget.job.id
+            : bulkDeleting
+        }
         onConfirm={() => {
           if (!confirmTarget) return;
-          if (confirmTarget.kind === "single") handleDeleteJob(confirmTarget.job);
+          if (confirmTarget.kind === "single")
+            handleDeleteJob(confirmTarget.job);
           else handleBulkDelete();
         }}
         onCancel={() => setConfirmTarget(null)}

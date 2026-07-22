@@ -56,6 +56,21 @@ class KeywordSuggestionOutput(BaseModel):
     )
 
 
+class JobMatchScore(BaseModel):
+    job_id: str = Field(description="The exact job id as given in the input, unchanged")
+    score: int = Field(ge=0, le=100, description="0-100 suitability score for this candidate's resume")
+    rationale: str = Field(description="1-2 sentence explanation referencing specific resume content")
+
+
+class JobMatchOutput(BaseModel):
+    matches: list[JobMatchScore] = Field(
+        description=(
+            "Jobs ranked best-fit first. Omit jobs that are clearly not a good fit entirely rather than "
+            "including them with a low score."
+        )
+    )
+
+
 class ResumeExtraction(BaseModel):
     full_name: str | None = Field(default=None, description="The candidate's full name, or null if not found")
     email: str | None = Field(default=None, description="The candidate's email address, or null if not found")

@@ -136,6 +136,27 @@ export interface ComparisonRun {
   completed_at: string | null;
 }
 
+export interface JobMatchItem {
+  job_id: string;
+  score: number;
+  rationale: string;
+  title: string;
+  company: string | null;
+  location_raw: string | null;
+  remote_type: RemoteType;
+  apply_url: string | null;
+}
+
+export interface JobMatchRun {
+  id: string;
+  profile_id: string;
+  client_id: string;
+  status: AnalysisStatus;
+  matches: JobMatchItem[];
+  created_at: string;
+  completed_at: string | null;
+}
+
 export interface Application {
   id: string;
   client_id: string;

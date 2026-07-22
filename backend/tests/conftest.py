@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 
 # Redirect to a separate `..._test` database before any app module is imported —
 # core.db and core.scheduler both build a module-level engine from DATABASE_URL at
@@ -25,6 +26,8 @@ from sqlmodel import SQLModel
 import db.models  # noqa: F401  registers tables on SQLModel.metadata
 from agents.schemas import (
     ComparisonOutput,
+    JobMatchOutput,
+    JobMatchScore,
     KeywordAnalysisOutput,
     KeywordSuggestionOutput,
     LocationAnalysisOutput,
@@ -136,6 +139,13 @@ async def _fake_run_structured(session, *, agent_type, related_entity_type, rela
         return ComparisonOutput(winner_profile_id=None, bottlenecks=["stub bottleneck"], summary="stubbed summary")
     if output_model is KeywordSuggestionOutput:
         return KeywordSuggestionOutput(keywords=["backend engineer", "senior backend engineer", "python developer"])
+    if output_model is JobMatchOutput:
+        # Pull a real candidate job id out of the prompt so the service's hallucinated-id
+        # guard (matching returned ids against the actual candidate set) has something
+        # genuine to accept, rather than trivially filtering everything out.
+        found = re.search(r"id: ([0-9a-fA-F-]{36})", prompt)
+        job_id = found.group(1) if found else "00000000-0000-0000-0000-000000000000"
+        return JobMatchOutput(matches=[JobMatchScore(job_id=job_id, score=88, rationale="stubbed rationale")])
     raise AssertionError(f"unexpected output_model in test stub: {output_model}")
 
 
@@ -147,3 +157,4 @@ def mock_llm(monkeypatch):
     monkeypatch.setattr("agents.location_agent.run_structured", _fake_run_structured)
     monkeypatch.setattr("agents.comparison_agent.run_structured", _fake_run_structured)
     monkeypatch.setattr("agents.keyword_suggestion_agent.run_structured", _fake_run_structured)
+    monkeypatch.setattr("agents.job_match_agent.run_structured", _fake_run_structured)

@@ -13,6 +13,7 @@ from db.models.enums import (
     ScrapeStatus,
 )
 from db.models.job import Job
+from db.models.job_match_run import JobMatchRun
 from db.models.job_source import JobSource
 from db.models.keyword_analysis import KeywordAnalysis
 from db.models.location_analysis import LocationAnalysis
@@ -32,6 +33,7 @@ __all__ = [
     "KeywordAnalysis",
     "LocationAnalysis",
     "ComparisonRun",
+    "JobMatchRun",
     "Application",
     "BDRole",
     "ClientStatus",

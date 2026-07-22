@@ -1,4 +1,16 @@
+from sqlmodel import select
+
+from db.models import Job, JobSource
 from tests.conftest import API
+
+
+async def _make_job(db_session, external_id: str) -> Job:
+    source = (await db_session.exec(select(JobSource).where(JobSource.name == "adzuna"))).first()
+    job = Job(job_source_id=source.id, external_id=external_id, title="Backend Engineer at Acme")
+    db_session.add(job)
+    await db_session.commit()
+    await db_session.refresh(job)
+    return job
 
 
 async def _create_client_with_profiles(client, auth_headers, email):
@@ -93,6 +105,47 @@ async def test_compare_clients_requires_at_least_two_profiles(client, auth_heade
     resp = await client.post(
         f"{API}/analysis/compare-clients",
         json={"profile_ids": [profile_a_id]},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 400
+
+
+async def test_job_matches_against_explicit_job_ids(client, auth_headers, mock_llm, db_session):
+    _, profile_id, _ = await _create_client_with_profiles(client, auth_headers, "match@example.com")
+    job = await _make_job(db_session, "match-job-1")
+
+    resp = await client.post(
+        f"{API}/analysis/job-matches",
+        json={"profile_id": profile_id, "job_ids": [str(job.id)]},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["status"] == "complete"
+    assert len(body["matches"]) == 1
+    assert body["matches"][0]["job_id"] == str(job.id)
+    assert body["matches"][0]["title"] == job.title
+
+
+async def test_job_matches_falls_back_to_recent_jobs_when_no_ids_given(client, auth_headers, mock_llm, db_session):
+    _, profile_id, _ = await _create_client_with_profiles(client, auth_headers, "match2@example.com")
+    await _make_job(db_session, "match-job-recent")
+
+    resp = await client.post(
+        f"{API}/analysis/job-matches",
+        json={"profile_id": profile_id},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201
+    assert resp.json()["status"] == "complete"
+
+
+async def test_job_matches_requires_scraped_jobs(client, auth_headers, mock_llm):
+    _, profile_id, _ = await _create_client_with_profiles(client, auth_headers, "match3@example.com")
+
+    resp = await client.post(
+        f"{API}/analysis/job-matches",
+        json={"profile_id": profile_id, "job_ids": ["00000000-0000-0000-0000-000000000000"]},
         headers=auth_headers,
     )
     assert resp.status_code == 400

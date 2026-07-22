@@ -4,6 +4,7 @@ import type {
   Client,
   ComparisonRun,
   Job,
+  JobMatchRun,
   JobSource,
   KeywordAnalysis,
   LocationAnalysis,
@@ -198,6 +199,11 @@ export const api = {
       request<ComparisonRun>("/analysis/compare-clients", {
         method: "POST",
         body: JSON.stringify({ profile_ids, role_title, role_keywords: role_keywords || [] }),
+      }),
+    matchJobs: (profile_id: string, job_ids?: string[]) =>
+      request<JobMatchRun>("/analysis/job-matches", {
+        method: "POST",
+        body: JSON.stringify({ profile_id, job_ids }),
       }),
   },
 
