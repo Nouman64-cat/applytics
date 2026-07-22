@@ -76,6 +76,7 @@ async def match_jobs_for_profile(
                 "location_raw": job.location_raw,
                 "remote_type": job.remote_type.value,
                 "apply_url": job.apply_url,
+                "is_used": job.is_used,
             }
         )
     matches.sort(key=lambda m: m["score"], reverse=True)

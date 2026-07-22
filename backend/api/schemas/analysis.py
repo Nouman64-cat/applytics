@@ -77,6 +77,7 @@ class JobMatchItem(BaseModel):
     location_raw: str | None
     remote_type: str
     apply_url: str | None
+    is_used: bool
 
 
 class JobMatchRead(BaseModel):

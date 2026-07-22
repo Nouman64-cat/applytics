@@ -145,6 +145,7 @@ export interface JobMatchItem {
   location_raw: string | null;
   remote_type: RemoteType;
   apply_url: string | null;
+  is_used: boolean;
 }
 
 export interface JobMatchRun {

@@ -6,6 +6,7 @@ import type { ComparisonRun, JobMatchRun, LocationAnalysis, Profile, TargetRole 
 import { btn, card, errorText, input, label, remoteBadge, sectionTitle } from "@/lib/ui";
 import Spinner from "@/components/Spinner";
 import ComparisonResultView from "@/components/ComparisonResultView";
+import Switch from "@/components/Switch";
 
 export default function AnalysisSection({
   clientId,
@@ -80,6 +81,24 @@ export default function AnalysisSection({
       setError(err instanceof ApiError ? err.message : "Job matching failed");
     } finally {
       setMatchLoading(false);
+    }
+  }
+
+  async function handleToggleMatchUsed(jobId: string, value: boolean) {
+    setMatchResult((prev) =>
+      prev
+        ? { ...prev, matches: prev.matches.map((m) => (m.job_id === jobId ? { ...m, is_used: value } : m)) }
+        : prev
+    );
+    try {
+      await api.jobs.setUsed(jobId, value);
+    } catch (err) {
+      setMatchResult((prev) =>
+        prev
+          ? { ...prev, matches: prev.matches.map((m) => (m.job_id === jobId ? { ...m, is_used: !value } : m)) }
+          : prev
+      );
+      setError(err instanceof ApiError ? err.message : "Failed to update job");
     }
   }
 
@@ -225,14 +244,22 @@ export default function AnalysisSection({
           ) : (
             <div className="space-y-2">
               {matchResult.matches.map((m) => (
-                <div key={m.job_id} className="rounded-xl border border-zinc-200/70 p-3">
+                <div
+                  key={m.job_id}
+                  className={`rounded-xl border p-3 ${m.is_used ? "border-zinc-200/70 bg-zinc-50/50" : "border-zinc-200/70"}`}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <a
                         href={m.apply_url ?? "#"}
                         target="_blank"
                         rel="noreferrer"
-                        className="truncate font-medium text-zinc-900 hover:text-indigo-600 hover:underline"
+                        onClick={() => {
+                          if (m.apply_url && !m.is_used) handleToggleMatchUsed(m.job_id, true);
+                        }}
+                        className={`truncate font-medium hover:text-indigo-600 hover:underline ${
+                          m.is_used ? "text-zinc-400" : "text-zinc-900"
+                        }`}
                       >
                         {m.title}
                       </a>
@@ -242,9 +269,21 @@ export default function AnalysisSection({
                           {m.location_raw ? ` · ${m.location_raw}` : ""}
                         </span>
                         <span className={remoteBadge(m.remote_type)}>{m.remote_type}</span>
+                        {m.is_used && (
+                          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                            Used
+                          </span>
+                        )}
                       </p>
                     </div>
-                    <span className="shrink-0 text-sm font-semibold text-zinc-900">{m.score}/100</span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="text-sm font-semibold text-zinc-900">{m.score}/100</span>
+                      <Switch
+                        checked={m.is_used}
+                        onChange={(value) => handleToggleMatchUsed(m.job_id, value)}
+                        label={`Mark "${m.title}" as ${m.is_used ? "unused" : "used"}`}
+                      />
+                    </div>
                   </div>
                   <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
                     <div
