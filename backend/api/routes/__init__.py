@@ -7,6 +7,7 @@ from api.routes.bds import router as bds_router
 from api.routes.clients import router as clients_router
 from api.routes.health import router as health_router
 from api.routes.jobs import router as jobs_router
+from api.routes.market_research import router as market_research_router
 from api.routes.profiles import router as profiles_router
 from api.routes.scrape import router as scrape_router
 
@@ -20,3 +21,4 @@ api_router.include_router(scrape_router, tags=["scrape"])
 api_router.include_router(jobs_router, tags=["jobs"])
 api_router.include_router(analysis_router, tags=["analysis"])
 api_router.include_router(applications_router, tags=["applications"])
+api_router.include_router(market_research_router, tags=["market-research"])

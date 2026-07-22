@@ -31,6 +31,7 @@ from agents.schemas import (
     KeywordAnalysisOutput,
     KeywordSuggestionOutput,
     LocationAnalysisOutput,
+    MarketResearchAnswer,
     ProfileScore,
 )
 from core.config import get_settings
@@ -158,3 +159,24 @@ def mock_llm(monkeypatch):
     monkeypatch.setattr("agents.comparison_agent.run_structured", _fake_run_structured)
     monkeypatch.setattr("agents.keyword_suggestion_agent.run_structured", _fake_run_structured)
     monkeypatch.setattr("agents.job_match_agent.run_structured", _fake_run_structured)
+
+
+async def _fake_run_gemini_structured(
+    session, *, agent_type, related_entity_type, related_entity_id, contents, output_model, model_name, system_instruction=None
+):
+    if output_model is MarketResearchAnswer:
+        return MarketResearchAnswer(
+            answer="stubbed market research answer",
+            key_data_points=["stub data point"],
+            suggested_follow_ups=["stub follow-up question?"],
+        )
+    raise AssertionError(f"unexpected output_model in gemini test stub: {output_model}")
+
+
+@pytest.fixture
+def mock_gemini_chat(monkeypatch):
+    """Stubs the Gemini-backed market-research agent so tests are fast, free, and
+    deterministic — no real Gemini credits spent running the suite. Note:
+    resume_extraction_agent's Gemini calls remain unmocked/untested — a pre-existing
+    gap in this repo, not introduced here."""
+    monkeypatch.setattr("agents.market_research_agent.run_gemini_structured", _fake_run_gemini_structured)

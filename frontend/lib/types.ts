@@ -176,3 +176,22 @@ export interface ProfilePerformance {
   status_counts: Record<string, number>;
   interview_rate: number | null;
 }
+
+export type ChatRole = "user" | "assistant";
+
+export interface ChatMessage {
+  id: string;
+  session_id: string;
+  role: ChatRole;
+  content: string;
+  key_data_points: string[];
+  suggested_follow_ups: string[];
+  created_at: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+}

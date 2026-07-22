@@ -1,6 +1,8 @@
 from db.models.agent_run import AgentRun
 from db.models.application import Application
 from db.models.business_developer import BusinessDeveloper
+from db.models.chat_message import ChatMessage
+from db.models.chat_session import ChatSession
 from db.models.client import Client
 from db.models.comparison_run import ComparisonRun
 from db.models.enums import (
@@ -35,6 +37,8 @@ __all__ = [
     "ComparisonRun",
     "JobMatchRun",
     "Application",
+    "ChatSession",
+    "ChatMessage",
     "BDRole",
     "ClientStatus",
     "ProfileType",

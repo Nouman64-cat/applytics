@@ -71,6 +71,18 @@ class JobMatchOutput(BaseModel):
     )
 
 
+class MarketResearchAnswer(BaseModel):
+    answer: str = Field(description="A direct, data-grounded answer to the BD's question, 2-6 sentences")
+    key_data_points: list[str] = Field(
+        default_factory=list,
+        description="Short bullet-style facts/numbers from the data snapshot that back up the answer",
+    )
+    suggested_follow_ups: list[str] = Field(
+        default_factory=list,
+        description="0-4 natural follow-up questions the BD might ask next, given this answer",
+    )
+
+
 class ResumeExtraction(BaseModel):
     full_name: str | None = Field(default=None, description="The candidate's full name, or null if not found")
     email: str | None = Field(default=None, description="The candidate's email address, or null if not found")

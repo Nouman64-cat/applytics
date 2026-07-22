@@ -1,6 +1,8 @@
 import type {
   Application,
   BD,
+  ChatMessage,
+  ChatSession,
   Client,
   ComparisonRun,
   Job,
@@ -44,6 +46,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
   if (token) headers.set("Authorization", `Bearer ${token}`);
+  // Bypasses ngrok's free-tier browser-warning interstitial (an HTML page ngrok
+  // returns instead of proxying the real response) whenever API_URL points at an
+  // ngrok tunnel. Harmless no-op against any other host.
+  headers.set("ngrok-skip-browser-warning", "true");
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
 
@@ -205,6 +211,18 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ profile_id, job_ids }),
       }),
+  },
+
+  marketResearch: {
+    listSessions: () => request<ChatSession[]>("/market-research/sessions"),
+    listMessages: (sessionId: string) => request<ChatMessage[]>(`/market-research/sessions/${sessionId}/messages`),
+    ask: (question: string, sessionId?: string | null) =>
+      request<ChatMessage>("/market-research/ask", {
+        method: "POST",
+        body: JSON.stringify({ question, session_id: sessionId ?? null }),
+      }),
+    deleteSession: (sessionId: string) =>
+      request<void>(`/market-research/sessions/${sessionId}`, { method: "DELETE" }),
   },
 
   applications: {
