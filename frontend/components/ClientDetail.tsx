@@ -8,8 +8,6 @@ import { errorText } from "@/lib/ui";
 import TargetRolesSection from "@/components/TargetRolesSection";
 import ProfilesSection from "@/components/ProfilesSection";
 import AnalysisSection from "@/components/AnalysisSection";
-import ApplicationsSection from "@/components/ApplicationsSection";
-import PerformanceSection from "@/components/PerformanceSection";
 
 export default function ClientDetail({ clientId }: { clientId: string }) {
   const [client, setClient] = useState<Client | null>(null);
@@ -70,10 +68,6 @@ export default function ClientDetail({ clientId }: { clientId: string }) {
       />
 
       <AnalysisSection clientId={clientId} targetRoles={targetRoles} profiles={profiles} />
-
-      <ApplicationsSection clientId={clientId} profiles={profiles} />
-
-      <PerformanceSection clientId={clientId} targetRoles={targetRoles} profiles={profiles} />
     </div>
   );
 }
