@@ -6,7 +6,7 @@ from sqlalchemy import func
 from sqlmodel import and_, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from db.models import Job, JobSource
+from db.models import Application, Job, JobSource
 from db.models.enums import RemoteType
 
 
@@ -101,3 +101,38 @@ async def get_job(session: AsyncSession, job_id: uuid.UUID) -> Job:
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     return job
+
+
+async def _referenced_job_ids(session: AsyncSession, job_ids: list[uuid.UUID]) -> set[uuid.UUID]:
+    result = await session.exec(select(Application.job_id).where(Application.job_id.in_(job_ids)).distinct())
+    return set(result.all())
+
+
+async def delete_job(session: AsyncSession, job_id: uuid.UUID) -> None:
+    job = await get_job(session, job_id)
+    if await _referenced_job_ids(session, [job_id]):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete this job — it has an application logged against it.",
+        )
+    await session.delete(job)
+    await session.commit()
+
+
+async def delete_jobs(session: AsyncSession, job_ids: list[uuid.UUID]) -> dict[str, int]:
+    if not job_ids:
+        return {"deleted": 0, "skipped": 0}
+
+    referenced = await _referenced_job_ids(session, job_ids)
+    deletable_ids = [jid for jid in job_ids if jid not in referenced]
+
+    deleted = 0
+    if deletable_ids:
+        result = await session.exec(select(Job).where(Job.id.in_(deletable_ids)))
+        jobs = result.all()
+        for job in jobs:
+            await session.delete(job)
+        deleted = len(jobs)
+        await session.commit()
+
+    return {"deleted": deleted, "skipped": len(referenced)}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { Job, JobSource, RemoteType } from "@/lib/types";
 import Spinner from "@/components/Spinner";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { remoteBadge } from "@/lib/ui";
 
 // This page is deliberately light-theme-only, regardless of the rest of the app or the
@@ -44,6 +45,18 @@ function LinkIcon() {
   );
 }
 
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.75} stroke="currentColor" className="h-4 w-4">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+      />
+    </svg>
+  );
+}
+
 function SourceBadge({ name }: { name: string }) {
   const icon = SOURCE_ICONS[name.toLowerCase()] ?? { letter: "?", bg: "bg-zinc-100", text: "text-zinc-500" };
   return (
@@ -78,6 +91,14 @@ export default function JobsPage() {
   const [postedAfter, setPostedAfter] = useState("");
   const [postedBefore, setPostedBefore] = useState("");
   const [page, setPage] = useState(1);
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteNotice, setBulkDeleteNotice] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<
+    { kind: "single"; job: Job } | { kind: "bulk"; count: number } | null
+  >(null);
 
   const filterParams = {
     source: filterSource || undefined,
@@ -120,6 +141,66 @@ export default function JobsPage() {
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterSource, filterRemoteType, filterKeyword, postedAfter, postedBefore]);
+
+  // Selection is scoped to the currently visible page/filter set — clear it whenever either changes.
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, filterSource, filterRemoteType, filterKeyword, postedAfter, postedBefore]);
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (!jobs) return;
+    setSelectedIds((prev) => (prev.size === jobs.length ? new Set() : new Set(jobs.map((j) => j.id))));
+  }
+
+  async function handleDeleteJob(job: Job) {
+    setDeletingId(job.id);
+    setError(null);
+    try {
+      await api.jobs.delete(job.id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(job.id);
+        return next;
+      });
+      refreshJobs();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to delete job");
+    } finally {
+      setDeletingId(null);
+      setConfirmTarget(null);
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    setBulkDeleting(true);
+    setError(null);
+    setBulkDeleteNotice(null);
+    try {
+      const result = await api.jobs.bulkDelete([...selectedIds]);
+      setSelectedIds(new Set());
+      refreshJobs();
+      setBulkDeleteNotice(
+        result.skipped > 0
+          ? `Deleted ${result.deleted} job(s). Skipped ${result.skipped} — they have an application logged against them.`
+          : `Deleted ${result.deleted} job(s).`
+      );
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Bulk delete failed");
+    } finally {
+      setBulkDeleting(false);
+      setConfirmTarget(null);
+    }
+  }
 
   function sourceName(jobSourceId: string): string {
     return sources.find((s) => s.id === jobSourceId)?.name ?? "unknown";
@@ -290,6 +371,27 @@ export default function JobsPage() {
             <div className="ml-auto text-xs font-medium text-zinc-400">{total} job(s) found</div>
           </div>
 
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
+              <span className="font-medium">{selectedIds.size} selected</span>
+              <button
+                className="inline-flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1 text-sm font-medium text-red-600 shadow-sm hover:bg-red-50 disabled:opacity-50"
+                onClick={() => setConfirmTarget({ kind: "bulk", count: selectedIds.size })}
+                disabled={bulkDeleting}
+              >
+                {bulkDeleting ? <Spinner className="h-3.5 w-3.5" /> : <TrashIcon />}
+                {bulkDeleting ? "Deleting…" : "Delete selected"}
+              </button>
+              <button className="text-indigo-600 hover:underline" onClick={() => setSelectedIds(new Set())}>
+                Clear selection
+              </button>
+            </div>
+          )}
+
+          {bulkDeleteNotice && (
+            <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">{bulkDeleteNotice}</div>
+          )}
+
           {jobs === null ? (
             <div className="flex items-center gap-2 py-8 text-sm text-zinc-500">
               <Spinner className="h-4 w-4" />
@@ -304,6 +406,14 @@ export default function JobsPage() {
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="bg-zinc-50 text-left text-xs uppercase tracking-wide text-zinc-500">
+                    <th className="w-8 px-3 py-2.5">
+                      <input
+                        type="checkbox"
+                        checked={jobs.length > 0 && selectedIds.size === jobs.length}
+                        onChange={toggleSelectAll}
+                        aria-label="Select all jobs on this page"
+                      />
+                    </th>
                     <th className="px-3 py-2.5 font-medium">Source</th>
                     <th className="px-3 py-2.5 font-medium">Title</th>
                     <th className="px-3 py-2.5 font-medium">Company</th>
@@ -315,7 +425,20 @@ export default function JobsPage() {
                 </thead>
                 <tbody>
                   {jobs.map((j) => (
-                    <tr key={j.id} className="border-t border-zinc-100 hover:bg-indigo-50/40">
+                    <tr
+                      key={j.id}
+                      className={`border-t border-zinc-100 hover:bg-indigo-50/40 ${
+                        selectedIds.has(j.id) ? "bg-indigo-50/60" : ""
+                      }`}
+                    >
+                      <td className="px-3 py-2.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(j.id)}
+                          onChange={() => toggleSelected(j.id)}
+                          aria-label={`Select ${j.title}`}
+                        />
+                      </td>
                       <td className="whitespace-nowrap px-3 py-2.5">
                         <SourceBadge name={sourceName(j.job_source_id)} />
                       </td>
@@ -345,22 +468,35 @@ export default function JobsPage() {
                       <td className="whitespace-nowrap px-3 py-2.5 text-zinc-500">
                         {(j.posted_at ?? j.scraped_at).slice(0, 10)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
-                        {j.apply_url ? (
-                          <a
-                            href={j.apply_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            title="Open job posting"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-indigo-50 hover:text-indigo-600"
+                      <td className="whitespace-nowrap px-3 py-2.5">
+                        <div className="flex items-center justify-end gap-1">
+                          {j.apply_url ? (
+                            <a
+                              href={j.apply_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Open job posting"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-indigo-50 hover:text-indigo-600"
+                            >
+                              <LinkIcon />
+                            </a>
+                          ) : (
+                            <span
+                              className="inline-flex h-7 w-7 items-center justify-center text-zinc-200"
+                              title="No URL available"
+                            >
+                              <LinkIcon />
+                            </span>
+                          )}
+                          <button
+                            title="Delete job"
+                            onClick={() => setConfirmTarget({ kind: "single", job: j })}
+                            disabled={deletingId === j.id}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                           >
-                            <LinkIcon />
-                          </a>
-                        ) : (
-                          <span className="inline-flex h-7 w-7 items-center justify-center text-zinc-200" title="No URL available">
-                            <LinkIcon />
-                          </span>
-                        )}
+                            {deletingId === j.id ? <Spinner className="h-3.5 w-3.5" /> : <TrashIcon />}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -394,6 +530,25 @@ export default function JobsPage() {
           )}
         </section>
       </div>
+
+      <ConfirmDialog
+        open={confirmTarget !== null}
+        title={
+          confirmTarget?.kind === "single"
+            ? `Delete "${confirmTarget.job.title}"?`
+            : `Delete ${confirmTarget?.kind === "bulk" ? confirmTarget.count : 0} job(s)?`
+        }
+        description="This can't be undone."
+        confirmLabel="Delete"
+        destructive
+        loading={confirmTarget?.kind === "single" ? deletingId === confirmTarget.job.id : bulkDeleting}
+        onConfirm={() => {
+          if (!confirmTarget) return;
+          if (confirmTarget.kind === "single") handleDeleteJob(confirmTarget.job);
+          else handleBulkDelete();
+        }}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }

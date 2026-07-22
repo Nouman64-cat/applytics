@@ -38,6 +38,10 @@ class ScrapeRunCreate(BaseModel):
     max_results: int | None = None
 
 
+class BulkDeleteJobsRequest(BaseModel):
+    job_ids: list[uuid.UUID]
+
+
 class ScrapeRunRead(BaseModel):
     id: uuid.UUID
     job_source_id: uuid.UUID

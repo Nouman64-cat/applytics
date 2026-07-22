@@ -4,7 +4,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from api.schemas.job import JobRead
+from api.schemas.job import BulkDeleteJobsRequest, JobRead
 from core.db import get_session
 from core.deps import get_current_bd
 from db.models import BusinessDeveloper
@@ -64,6 +64,15 @@ async def count_jobs(
     return {"total": total}
 
 
+@router.post("/bulk-delete")
+async def bulk_delete_jobs(
+    payload: BulkDeleteJobsRequest,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, int]:
+    return await job_service.delete_jobs(session, payload.job_ids)
+
+
 @router.get("/{job_id}", response_model=JobRead)
 async def get_job(
     job_id: uuid.UUID,
@@ -72,3 +81,12 @@ async def get_job(
 ) -> JobRead:
     job = await job_service.get_job(session, job_id)
     return JobRead.model_validate(job, from_attributes=True)
+
+
+@router.delete("/{job_id}", status_code=204)
+async def delete_job(
+    job_id: uuid.UUID,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    await job_service.delete_job(session, job_id)

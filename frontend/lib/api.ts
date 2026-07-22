@@ -163,6 +163,12 @@ export const api = {
       posted_after?: string;
       posted_before?: string;
     }) => request<{ total: number }>(`/jobs/count${qs(filters)}`),
+    delete: (id: string) => request<void>(`/jobs/${id}`, { method: "DELETE" }),
+    bulkDelete: (jobIds: string[]) =>
+      request<{ deleted: number; skipped: number }>("/jobs/bulk-delete", {
+        method: "POST",
+        body: JSON.stringify({ job_ids: jobIds }),
+      }),
   },
 
   analysis: {
