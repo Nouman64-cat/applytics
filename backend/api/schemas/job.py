@@ -19,6 +19,11 @@ class JobRead(BaseModel):
     apply_url: str | None
     posted_at: datetime | None
     scraped_at: datetime
+    is_used: bool
+
+
+class JobUpdate(BaseModel):
+    is_used: bool
 
 
 class JobSourceRead(BaseModel):
@@ -40,6 +45,16 @@ class ScrapeRunCreate(BaseModel):
 
 class BulkDeleteJobsRequest(BaseModel):
     job_ids: list[uuid.UUID]
+
+
+class SuggestKeywordsRequest(BaseModel):
+    seed: str = ""
+    platform: str | None = None
+    remote_only: bool = True
+
+
+class SuggestKeywordsResponse(BaseModel):
+    keywords: list[str]
 
 
 class ScrapeRunRead(BaseModel):

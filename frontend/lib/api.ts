@@ -164,6 +164,13 @@ export const api = {
       posted_before?: string;
     }) => request<{ total: number }>(`/jobs/count${qs(filters)}`),
     delete: (id: string) => request<void>(`/jobs/${id}`, { method: "DELETE" }),
+    setUsed: (id: string, is_used: boolean) =>
+      request<Job>(`/jobs/${id}`, { method: "PATCH", body: JSON.stringify({ is_used }) }),
+    suggestKeywords: (params: { seed: string; platform?: string; remote_only?: boolean }) =>
+      request<{ keywords: string[] }>("/jobs/suggest-keywords", {
+        method: "POST",
+        body: JSON.stringify(params),
+      }),
     bulkDelete: (jobIds: string[]) =>
       request<{ deleted: number; skipped: number }>("/jobs/bulk-delete", {
         method: "POST",

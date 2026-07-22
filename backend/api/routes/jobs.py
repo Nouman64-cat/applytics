@@ -1,12 +1,13 @@
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from api.schemas.job import BulkDeleteJobsRequest, JobRead
+from api.schemas.job import BulkDeleteJobsRequest, JobRead, JobUpdate, SuggestKeywordsRequest, SuggestKeywordsResponse
 from core.db import get_session
 from core.deps import get_current_bd
+from core.rate_limit import limiter
 from db.models import BusinessDeveloper
 from db.models.enums import RemoteType
 from services import job_service
@@ -64,6 +65,18 @@ async def count_jobs(
     return {"total": total}
 
 
+@router.post("/suggest-keywords", response_model=SuggestKeywordsResponse)
+@limiter.limit("15/minute")
+async def suggest_keywords(
+    request: Request,
+    payload: SuggestKeywordsRequest,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> SuggestKeywordsResponse:
+    keywords = await job_service.suggest_keywords(session, payload.seed, payload.platform, payload.remote_only)
+    return SuggestKeywordsResponse(keywords=keywords)
+
+
 @router.post("/bulk-delete")
 async def bulk_delete_jobs(
     payload: BulkDeleteJobsRequest,
@@ -90,3 +103,14 @@ async def delete_job(
     session: AsyncSession = Depends(get_session),
 ) -> None:
     await job_service.delete_job(session, job_id)
+
+
+@router.patch("/{job_id}", response_model=JobRead)
+async def update_job(
+    job_id: uuid.UUID,
+    payload: JobUpdate,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> JobRead:
+    job = await job_service.set_job_used(session, job_id, payload.is_used)
+    return JobRead.model_validate(job, from_attributes=True)

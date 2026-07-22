@@ -47,6 +47,15 @@ class ComparisonOutput(BaseModel):
     summary: str = Field(description="2-4 sentence overall summary of the comparison and recommendation")
 
 
+class KeywordSuggestionOutput(BaseModel):
+    keywords: list[str] = Field(
+        description=(
+            "6-10 job-search query strings a Business Developer could paste into a job board's search box, "
+            "ranked roughly broad-to-specific, covering common title variants/synonyms and seniority levels"
+        )
+    )
+
+
 class ResumeExtraction(BaseModel):
     full_name: str | None = Field(default=None, description="The candidate's full name, or null if not found")
     email: str | None = Field(default=None, description="The candidate's email address, or null if not found")

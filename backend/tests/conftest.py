@@ -23,7 +23,13 @@ from sqlalchemy import text
 from sqlmodel import SQLModel
 
 import db.models  # noqa: F401  registers tables on SQLModel.metadata
-from agents.schemas import ComparisonOutput, KeywordAnalysisOutput, LocationAnalysisOutput, ProfileScore
+from agents.schemas import (
+    ComparisonOutput,
+    KeywordAnalysisOutput,
+    KeywordSuggestionOutput,
+    LocationAnalysisOutput,
+    ProfileScore,
+)
 from core.config import get_settings
 from core.db import async_session_factory, engine
 from main import app
@@ -128,6 +134,8 @@ async def _fake_run_structured(session, *, agent_type, related_entity_type, rela
         return ProfileScore(profile_id=str(related_entity_id), strengths=["stub strength"], weaknesses=["stub weakness"], score=75)
     if output_model is ComparisonOutput:
         return ComparisonOutput(winner_profile_id=None, bottlenecks=["stub bottleneck"], summary="stubbed summary")
+    if output_model is KeywordSuggestionOutput:
+        return KeywordSuggestionOutput(keywords=["backend engineer", "senior backend engineer", "python developer"])
     raise AssertionError(f"unexpected output_model in test stub: {output_model}")
 
 
@@ -138,3 +146,4 @@ def mock_llm(monkeypatch):
     monkeypatch.setattr("agents.keyword_agent.run_structured", _fake_run_structured)
     monkeypatch.setattr("agents.location_agent.run_structured", _fake_run_structured)
     monkeypatch.setattr("agents.comparison_agent.run_structured", _fake_run_structured)
+    monkeypatch.setattr("agents.keyword_suggestion_agent.run_structured", _fake_run_structured)

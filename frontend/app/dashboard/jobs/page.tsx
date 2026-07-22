@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { Job, JobSource, RemoteType } from "@/lib/types";
 import Spinner from "@/components/Spinner";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import Switch from "@/components/Switch";
 import { remoteBadge } from "@/lib/ui";
 
 // This page is deliberately light-theme-only, regardless of the rest of the app or the
@@ -21,6 +22,8 @@ const lBtn =
   "inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 text-white px-3.5 py-2 text-sm font-medium shadow-sm hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors";
 const lBtnSecondary =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 hover:border-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors";
+const lTagInputWrap =
+  "flex min-h-[2.375rem] w-full flex-wrap items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2 py-1.5 shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/40 focus-within:border-indigo-400 transition-shadow";
 // No external logo assets/CDNs here — each source gets a simple colored monogram icon
 // (brand-adjacent color, not an actual trademarked logo) so the jobs table is scannable
 // at a glance without a network dependency.
@@ -57,17 +60,33 @@ function TrashIcon() {
   );
 }
 
-function SourceBadge({ name }: { name: string }) {
+function SourceIcon({ name, className = "h-5 w-5 text-[10px]" }: { name: string; className?: string }) {
   const icon = SOURCE_ICONS[name.toLowerCase()] ?? { letter: "?", bg: "bg-zinc-100", text: "text-zinc-500" };
   return (
+    <span className={`flex shrink-0 items-center justify-center rounded-md font-bold ${icon.bg} ${icon.text} ${className}`}>
+      {icon.letter}
+    </span>
+  );
+}
+
+function SourceBadge({ name }: { name: string }) {
+  return (
     <span className="inline-flex items-center gap-1.5">
-      <span
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-bold ${icon.bg} ${icon.text}`}
-      >
-        {icon.letter}
-      </span>
+      <SourceIcon name={name} />
       <span className="text-sm text-zinc-700 capitalize">{name}</span>
     </span>
+  );
+}
+
+function SparklesIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.75} stroke="currentColor" className="h-4 w-4">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"
+      />
+    </svg>
   );
 }
 
@@ -80,10 +99,14 @@ export default function JobsPage() {
   const [showScrapeForm, setShowScrapeForm] = useState(false);
 
   const [source, setSource] = useState("");
-  const [keywords, setKeywords] = useState("");
+  const [position, setPosition] = useState("");
+  const [keywordTags, setKeywordTags] = useState<string[]>([]);
+  const [keywordInput, setKeywordInput] = useState("");
   const [remoteOnly, setRemoteOnly] = useState(true);
   const [maxResults, setMaxResults] = useState(""); // blank = unlimited (until no new results)
   const [scraping, setScraping] = useState(false);
+  const [keywordSuggestions, setKeywordSuggestions] = useState<string[]>([]);
+  const [suggestingKeywords, setSuggestingKeywords] = useState(false);
 
   const [filterSource, setFilterSource] = useState("");
   const [filterRemoteType, setFilterRemoteType] = useState<RemoteType | "">("");
@@ -161,6 +184,16 @@ export default function JobsPage() {
     setSelectedIds((prev) => (prev.size === jobs.length ? new Set() : new Set(jobs.map((j) => j.id))));
   }
 
+  async function handleToggleUsed(job: Job, value: boolean) {
+    setJobs((prev) => prev && prev.map((j) => (j.id === job.id ? { ...j, is_used: value } : j)));
+    try {
+      await api.jobs.setUsed(job.id, value);
+    } catch (err) {
+      setJobs((prev) => prev && prev.map((j) => (j.id === job.id ? { ...j, is_used: !value } : j)));
+      setError(err instanceof ApiError ? err.message : "Failed to update job");
+    }
+  }
+
   async function handleDeleteJob(job: Job) {
     setDeletingId(job.id);
     setError(null);
@@ -206,15 +239,60 @@ export default function JobsPage() {
     return sources.find((s) => s.id === jobSourceId)?.name ?? "unknown";
   }
 
+  function addKeywordTag(raw: string) {
+    const tag = raw.trim();
+    if (!tag) return;
+    setKeywordTags((prev) => (prev.includes(tag) ? prev : [...prev, tag]));
+  }
+
+  function removeKeywordTag(tag: string) {
+    setKeywordTags((prev) => prev.filter((t) => t !== tag));
+  }
+
+  function handleKeywordInputKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addKeywordTag(keywordInput);
+      setKeywordInput("");
+    } else if (e.key === "Backspace" && keywordInput === "" && keywordTags.length > 0) {
+      setKeywordTags((prev) => prev.slice(0, -1));
+    }
+  }
+
+  function handleKeywordInputPaste(raw: string) {
+    if (!raw.includes(",")) {
+      setKeywordInput(raw);
+      return;
+    }
+    const parts = raw.split(",");
+    parts.slice(0, -1).forEach(addKeywordTag);
+    setKeywordInput(parts[parts.length - 1].trimStart());
+  }
+
+  // Includes whatever's still sitting in the text box but not yet committed as a tag,
+  // so hitting "Run scrape" (or "AI suggest") without pressing Enter/comma first still works.
+  function effectiveKeywords(): string[] {
+    const pending = keywordInput.trim();
+    return pending ? [...keywordTags, pending] : keywordTags;
+  }
+
+  // Position (the job title being searched for) is kept as its own field but folded into
+  // the single search-query string sent to each job board, since none of the scrapers
+  // support separate title/keyword query params — it's placed first as the primary term.
+  function combinedSearchQuery(): string {
+    return [position.trim(), ...effectiveKeywords()].filter(Boolean).join(" ");
+  }
+
   async function handleScrape(e: FormEvent) {
     e.preventDefault();
     setScraping(true);
     setError(null);
     setScrapeStatus(null);
     try {
+      const query = combinedSearchQuery();
       const run = await api.scrape.trigger({
         source,
-        keywords: keywords || undefined,
+        keywords: query || undefined,
         remote_only: remoteOnly,
         max_results: maxResults ? Number(maxResults) : undefined,
       });
@@ -226,6 +304,23 @@ export default function JobsPage() {
       setError(err instanceof ApiError ? err.message : "Scrape failed");
     } finally {
       setScraping(false);
+    }
+  }
+
+  async function handleSuggestKeywords() {
+    setSuggestingKeywords(true);
+    setError(null);
+    try {
+      const result = await api.jobs.suggestKeywords({
+        seed: position.trim() || effectiveKeywords().join(" "),
+        platform: source || undefined,
+        remote_only: remoteOnly,
+      });
+      setKeywordSuggestions(result.keywords);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Keyword suggestion failed");
+    } finally {
+      setSuggestingKeywords(false);
     }
   }
 
@@ -258,7 +353,7 @@ export default function JobsPage() {
                 </span>
               ))}
             </div>
-            <form onSubmit={handleScrape} className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <form onSubmit={handleScrape} className="grid grid-cols-2 gap-3 sm:grid-cols-6">
               <div>
                 <label className={lLabel}>Source</label>
                 <select className={lInput} value={source} onChange={(e) => setSource(e.target.value)} required>
@@ -271,13 +366,52 @@ export default function JobsPage() {
                 </select>
               </div>
               <div>
-                <label className={lLabel}>Keywords</label>
+                <label className={lLabel}>Position</label>
                 <input
                   className={lInput}
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                  placeholder="backend engineer"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  placeholder="Backend Engineer"
                 />
+              </div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className={lLabel}>Keywords</label>
+                  <button
+                    type="button"
+                    onClick={handleSuggestKeywords}
+                    disabled={suggestingKeywords}
+                    className="mb-1.5 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                  >
+                    {suggestingKeywords ? <Spinner className="h-3 w-3" /> : <SparklesIcon />}
+                    {suggestingKeywords ? "Thinking…" : "AI suggest"}
+                  </button>
+                </div>
+                <div className={lTagInputWrap}>
+                  {keywordTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeKeywordTag(tag)}
+                        className="text-indigo-400 hover:text-indigo-700"
+                        aria-label={`Remove ${tag}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    className="min-w-[6rem] flex-1 border-none bg-transparent p-0 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-0"
+                    value={keywordInput}
+                    onChange={(e) => handleKeywordInputPaste(e.target.value)}
+                    onKeyDown={handleKeywordInputKeyDown}
+                    placeholder={keywordTags.length === 0 ? "backend engineer, remote…" : ""}
+                  />
+                </div>
               </div>
               <div>
                 <label className={lLabel}>Max results</label>
@@ -302,6 +436,24 @@ export default function JobsPage() {
                   {scraping ? "Scraping…" : "Run scrape"}
                 </button>
               </div>
+              {keywordSuggestions.length > 0 && (
+                <div className="col-span-2 flex flex-wrap items-center gap-1.5 sm:col-span-6">
+                  <span className="text-xs text-zinc-400">Suggestions:</span>
+                  {keywordSuggestions.map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => {
+                        addKeywordTag(k);
+                        setKeywordSuggestions((prev) => prev.filter((s) => s !== k));
+                      }}
+                      className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-100"
+                    >
+                      + {k}
+                    </button>
+                  ))}
+                </div>
+              )}
             </form>
             <p className="text-xs text-zinc-500">
               Leave &quot;Max results&quot; blank to keep paginating until the source has no new results (capped
@@ -320,18 +472,31 @@ export default function JobsPage() {
         {error && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
         <section className="space-y-3 rounded-2xl border border-zinc-200/70 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap gap-1.5 border-b border-zinc-200/70 pb-3">
+            <button
+              onClick={() => setFilterSource("")}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                filterSource === "" ? "bg-indigo-50 text-indigo-600" : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+              }`}
+            >
+              All platforms
+            </button>
+            {sources.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setFilterSource(s.name)}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
+                  filterSource === s.name
+                    ? "bg-indigo-50 text-indigo-600"
+                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900"
+                }`}
+              >
+                <SourceIcon name={s.name} className="h-4 w-4 text-[9px]" />
+                {s.name}
+              </button>
+            ))}
+          </div>
           <div className="flex flex-wrap items-end gap-2">
-            <div className="w-32">
-              <label className={lLabel}>Source</label>
-              <select className={lInput} value={filterSource} onChange={(e) => setFilterSource(e.target.value)}>
-                <option value="">All</option>
-                {sources.map((s) => (
-                  <option key={s.id} value={s.name}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className="w-32">
               <label className={lLabel}>Remote type</label>
               <select
@@ -420,6 +585,7 @@ export default function JobsPage() {
                     <th className="px-3 py-2.5 font-medium">Location</th>
                     <th className="px-3 py-2.5 font-medium">Remote</th>
                     <th className="px-3 py-2.5 font-medium">Posted</th>
+                    <th className="px-3 py-2.5 font-medium">Used</th>
                     <th className="px-3 py-2.5 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
@@ -447,7 +613,12 @@ export default function JobsPage() {
                           href={j.apply_url ?? "#"}
                           target="_blank"
                           rel="noreferrer"
-                          className="font-medium text-zinc-900 hover:text-indigo-600 hover:underline"
+                          onClick={() => {
+                            if (j.apply_url && !j.is_used) handleToggleUsed(j, true);
+                          }}
+                          className={`font-medium hover:text-indigo-600 hover:underline ${
+                            j.is_used ? "text-zinc-400" : "text-zinc-900"
+                          }`}
                           title={j.title}
                         >
                           {j.title}
@@ -468,6 +639,13 @@ export default function JobsPage() {
                       <td className="whitespace-nowrap px-3 py-2.5 text-zinc-500">
                         {(j.posted_at ?? j.scraped_at).slice(0, 10)}
                       </td>
+                      <td className="px-3 py-2.5">
+                        <Switch
+                          checked={j.is_used}
+                          onChange={(value) => handleToggleUsed(j, value)}
+                          label={`Mark "${j.title}" as ${j.is_used ? "unused" : "used"}`}
+                        />
+                      </td>
                       <td className="whitespace-nowrap px-3 py-2.5">
                         <div className="flex items-center justify-end gap-1">
                           {j.apply_url ? (
@@ -475,6 +653,9 @@ export default function JobsPage() {
                               href={j.apply_url}
                               target="_blank"
                               rel="noreferrer"
+                              onClick={() => {
+                                if (!j.is_used) handleToggleUsed(j, true);
+                              }}
                               title="Open job posting"
                               className="inline-flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 hover:bg-indigo-50 hover:text-indigo-600"
                             >

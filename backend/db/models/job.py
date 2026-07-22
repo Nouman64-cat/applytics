@@ -27,3 +27,4 @@ class Job(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     raw_payload: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    is_used: bool = Field(default=False)

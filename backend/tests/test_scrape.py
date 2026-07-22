@@ -74,6 +74,27 @@ async def test_scrape_failure_is_recorded_not_raised(client, auth_headers, monke
     assert "simulated upstream failure" in body["error_message"]
 
 
+async def test_suggest_keywords(client, auth_headers, mock_llm):
+    resp = await client.post(f"{API}/jobs/suggest-keywords", json={"seed": "backend engineer"}, headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json()["keywords"] == ["backend engineer", "senior backend engineer", "python developer"]
+
+
+async def test_mark_job_used(client, auth_headers, db_session):
+    job = await _make_job(db_session, "mark-used-1")
+    assert job.is_used is False
+
+    resp = await client.patch(f"{API}/jobs/{job.id}", json={"is_used": True}, headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.json()["is_used"] is True
+
+    get_resp = await client.get(f"{API}/jobs/{job.id}", headers=auth_headers)
+    assert get_resp.json()["is_used"] is True
+
+    unmark_resp = await client.patch(f"{API}/jobs/{job.id}", json={"is_used": False}, headers=auth_headers)
+    assert unmark_resp.json()["is_used"] is False
+
+
 async def test_delete_job(client, auth_headers, db_session):
     job = await _make_job(db_session, "delete-me-1")
 

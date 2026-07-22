@@ -6,6 +6,7 @@ from sqlalchemy import func
 from sqlmodel import and_, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from agents.keyword_suggestion_agent import suggest_job_search_keywords
 from db.models import Application, Job, JobSource
 from db.models.enums import RemoteType
 
@@ -103,6 +104,15 @@ async def get_job(session: AsyncSession, job_id: uuid.UUID) -> Job:
     return job
 
 
+async def set_job_used(session: AsyncSession, job_id: uuid.UUID, is_used: bool) -> Job:
+    job = await get_job(session, job_id)
+    job.is_used = is_used
+    session.add(job)
+    await session.commit()
+    await session.refresh(job)
+    return job
+
+
 async def _referenced_job_ids(session: AsyncSession, job_ids: list[uuid.UUID]) -> set[uuid.UUID]:
     result = await session.exec(select(Application.job_id).where(Application.job_id.in_(job_ids)).distinct())
     return set(result.all())
@@ -136,3 +146,10 @@ async def delete_jobs(session: AsyncSession, job_ids: list[uuid.UUID]) -> dict[s
         await session.commit()
 
     return {"deleted": deleted, "skipped": len(referenced)}
+
+
+async def suggest_keywords(
+    session: AsyncSession, seed: str, platform: str | None = None, remote_only: bool = True
+) -> list[str]:
+    result = await suggest_job_search_keywords(session, seed, platform, remote_only)
+    return result.keywords

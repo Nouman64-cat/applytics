@@ -90,6 +90,7 @@ export interface Job {
   apply_url: string | null;
   posted_at: string | null;
   scraped_at: string;
+  is_used: boolean;
 }
 
 export interface KeywordAnalysis {
