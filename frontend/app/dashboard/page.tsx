@@ -6,6 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import type { Client } from "@/lib/types";
 import { btn, btnSecondary, card, errorText, input, label } from "@/lib/ui";
 import Spinner from "@/components/Spinner";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700",
@@ -63,6 +64,18 @@ function ArrowRightIcon() {
   );
 }
 
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.75} stroke="currentColor" className="h-4 w-4 shrink-0">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+      />
+    </svg>
+  );
+}
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +91,9 @@ export default function ClientsPage() {
   const [extractedText, setExtractedText] = useState<string | null>(null);
   const [extractedFileName, setExtractedFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [pendingDelete, setPendingDelete] = useState<Client | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   function refresh() {
     api.clients
@@ -146,6 +162,21 @@ export default function ClientsPage() {
       setError(err instanceof ApiError ? err.message : "Failed to create client");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await api.clients.delete(pendingDelete.id);
+      setPendingDelete(null);
+      refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to delete client");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -277,13 +308,26 @@ export default function ClientsPage() {
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-sm font-semibold text-white shadow-sm">
                   {c.full_name.slice(0, 2).toUpperCase()}
                 </span>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${
-                    STATUS_STYLES[c.status] ?? STATUS_STYLES.active
-                  }`}
-                >
-                  {c.status}
-                </span>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${
+                      STATUS_STYLES[c.status] ?? STATUS_STYLES.active
+                    }`}
+                  >
+                    {c.status}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setPendingDelete(c);
+                    }}
+                    title="Delete client"
+                    className="rounded-lg p-1 text-zinc-300 opacity-0 transition-colors hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
               </div>
 
               <p className="truncate text-base font-semibold text-zinc-900">{c.full_name}</p>
@@ -317,6 +361,17 @@ export default function ClientsPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete ${pendingDelete?.full_name ?? "this client"}?`}
+        description="This permanently removes the client along with their target roles, profiles, applications, and analysis history. This can't be undone."
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

@@ -177,6 +177,16 @@ export interface ProfilePerformance {
   interview_rate: number | null;
 }
 
+export interface ClientDocument {
+  id: string;
+  client_id: string;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+  preview_url: string;
+  uploaded_at: string;
+}
+
 export type ChatRole = "user" | "assistant";
 
 export interface ChatMessage {

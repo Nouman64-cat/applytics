@@ -4,6 +4,7 @@ import type {
   ChatMessage,
   ChatSession,
   Client,
+  ClientDocument,
   ComparisonRun,
   Job,
   JobMatchRun,
@@ -105,6 +106,27 @@ export const api = {
       timezone?: string;
     }) => request<Client>("/clients", { method: "POST", body: JSON.stringify(payload) }),
     get: (id: string) => request<Client>(`/clients/${id}`),
+    update: (
+      id: string,
+      payload: {
+        full_name?: string;
+        email?: string;
+        current_city?: string | null;
+        current_state?: string | null;
+        current_country?: string | null;
+        timezone?: string | null;
+        status?: string;
+      },
+    ) => request<Client>(`/clients/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+    delete: (id: string) => request<void>(`/clients/${id}`, { method: "DELETE" }),
+    listDocuments: (clientId: string) => request<ClientDocument[]>(`/clients/${clientId}/documents`),
+    uploadDocument: (clientId: string, file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return request<ClientDocument>(`/clients/${clientId}/documents`, { method: "POST", body: formData });
+    },
+    deleteDocument: (documentId: string) =>
+      request<void>(`/clients/documents/${documentId}`, { method: "DELETE" }),
     extractResume: (file: File) => {
       const formData = new FormData();
       formData.append("file", file);

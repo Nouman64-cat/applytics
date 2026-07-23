@@ -174,6 +174,31 @@ async def _fake_run_gemini_structured(
 
 
 @pytest.fixture
+def mock_s3(monkeypatch):
+    """Stubs services.s3_service's boto3 calls with an in-memory fake, so tests don't
+    hit real AWS. Both client_document_service and client_service call these via
+    `s3_service.<fn>(...)` (a module-attribute lookup at call time, not a copied name
+    import), so patching the functions on services.s3_service itself is enough to cover
+    every caller — unlike the run_structured pattern above, no per-consumer patching
+    needed."""
+    store: dict[str, bytes] = {}
+
+    def _fake_upload_file(key, content, content_type):
+        store[key] = content
+
+    def _fake_generate_presigned_url(key, expires_in=900):
+        return f"https://fake-s3.test/{key}?expires_in={expires_in}"
+
+    def _fake_delete_file(key):
+        store.pop(key, None)
+
+    monkeypatch.setattr("services.s3_service.upload_file", _fake_upload_file)
+    monkeypatch.setattr("services.s3_service.generate_presigned_url", _fake_generate_presigned_url)
+    monkeypatch.setattr("services.s3_service.delete_file", _fake_delete_file)
+    return store
+
+
+@pytest.fixture
 def mock_gemini_chat(monkeypatch):
     """Stubs the Gemini-backed market-research agent so tests are fast, free, and
     deterministic — no real Gemini credits spent running the suite. Note:

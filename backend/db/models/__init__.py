@@ -4,6 +4,7 @@ from db.models.business_developer import BusinessDeveloper
 from db.models.chat_message import ChatMessage
 from db.models.chat_session import ChatSession
 from db.models.client import Client
+from db.models.client_document import ClientDocument
 from db.models.comparison_run import ComparisonRun
 from db.models.enums import (
     AnalysisStatus,
@@ -26,6 +27,7 @@ from db.models.target_role import TargetRole
 __all__ = [
     "BusinessDeveloper",
     "Client",
+    "ClientDocument",
     "TargetRole",
     "Profile",
     "JobSource",

@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     adzuna_app_id: str | None = None
     adzuna_app_key: str | None = None
 
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+    aws_s3_region: str | None = None
+    s3_bucket_name: str | None = None
+
     jwt_secret: str = "dev-secret-change-me"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24

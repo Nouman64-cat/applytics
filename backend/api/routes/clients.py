@@ -16,13 +16,14 @@ from api.schemas.client import (
     LinkedInUrlExtractionRequest,
     ResumeExtractionRead,
 )
+from api.schemas.client_document import ClientDocumentRead
 from api.schemas.performance import ProfilePerformanceRead
 from api.schemas.target_role import TargetRoleCreate, TargetRoleRead
 from core.db import get_session
 from core.deps import get_current_bd
 from core.rate_limit import limiter
-from db.models import BusinessDeveloper
-from services import client_service, performance_service, target_role_service
+from db.models import BusinessDeveloper, ClientDocument
+from services import client_document_service, client_service, performance_service, s3_service, target_role_service
 
 router = APIRouter(prefix="/clients")
 
@@ -121,6 +122,15 @@ async def update_client(
     return ClientRead.model_validate(client, from_attributes=True)
 
 
+@router.delete("/{client_id}", status_code=204)
+async def delete_client(
+    client_id: uuid.UUID,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    await client_service.delete_client(session, bd, client_id)
+
+
 @router.post("/{client_id}/target-roles", response_model=TargetRoleRead, status_code=201)
 async def create_target_role(
     client_id: uuid.UUID,
@@ -150,3 +160,55 @@ async def get_client_performance(
     session: AsyncSession = Depends(get_session),
 ) -> list[ProfilePerformanceRead]:
     return await performance_service.get_profile_performance(session, bd, client_id, target_role_id)
+
+
+def _document_read(document: ClientDocument) -> ClientDocumentRead:
+    return ClientDocumentRead(
+        id=document.id,
+        client_id=document.client_id,
+        filename=document.filename,
+        content_type=document.content_type,
+        size_bytes=document.size_bytes,
+        preview_url=s3_service.generate_presigned_url(document.s3_key),
+        uploaded_at=document.uploaded_at,
+    )
+
+
+@router.post("/{client_id}/documents", response_model=ClientDocumentRead, status_code=201)
+@limiter.limit("10/minute")
+async def upload_document(
+    request: Request,
+    client_id: uuid.UUID,
+    file: UploadFile = File(...),
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> ClientDocumentRead:
+    content = await file.read()
+    document = await client_document_service.upload_document(
+        session,
+        bd,
+        client_id,
+        file.filename or "document",
+        content,
+        file.content_type or "application/octet-stream",
+    )
+    return _document_read(document)
+
+
+@router.get("/{client_id}/documents", response_model=list[ClientDocumentRead])
+async def list_documents(
+    client_id: uuid.UUID,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> list[ClientDocumentRead]:
+    documents = await client_document_service.list_documents(session, bd, client_id)
+    return [_document_read(d) for d in documents]
+
+
+@router.delete("/documents/{document_id}", status_code=204)
+async def delete_document(
+    document_id: uuid.UUID,
+    bd: BusinessDeveloper = Depends(get_current_bd),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    await client_document_service.delete_document(session, bd, document_id)
